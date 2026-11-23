@@ -84,46 +84,6 @@
   pointer-events: none;
 }
 
-.removeButton {
-  position: absolute;
-  top: 14.64%;
-  right: 14.64%;
-  transform: translate(50%, -50%);
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid $color-border-default;
-  background: $color-bg-sheet;
-  color: $color-text-secondary;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: $shadow-apple-sm;
-  opacity: 0;
-  transition:
-    opacity 0.15s ease,
-    color 0.15s ease,
-    border-color 0.15s ease;
-
-  .avatarFrame:hover &,
-  .avatarFrame:focus-within & {
-    opacity: 1;
-  }
-
-  &:hover,
-  &:focus-visible {
-    color: #dc2626;
-    border-color: #fca5a5;
-    outline: none;
-  }
-
-  @media (hover: none) {
-    opacity: 1;
-  }
-}
-
 .hiddenInput {
   display: none;
 }
@@ -134,4 +94,164 @@
   line-height: 1.2;
   text-align: center;
   color: #dc2626;
+}
+
+.dialog {
+  max-width: 29rem;
+  padding: 1.25rem;
+  gap: 0.9rem;
+}
+
+.galleryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  h2 {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+}
+
+.closeButton {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: $color-bg-subtle;
+  color: $color-text-secondary;
+  display: grid;
+  place-items: center;
+}
+
+.description {
+  color: $color-text-secondary;
+  font-size: 0.8125rem;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+
+  @media (max-width: 360px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.photoTile {
+  position: relative;
+}
+
+.uploadTile,
+.selectPhoto {
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid $color-border-default;
+  border-radius: $radius-md;
+  overflow: hidden;
+}
+
+.uploadTile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-style: dashed;
+  background: $color-canvas;
+  color: $color-accent-blue;
+  font-size: 0.8125rem;
+  font-weight: 500;
+
+  &:hover:not(:disabled) {
+    border-color: $color-accent-blue;
+    background: $color-accent-blue-soft;
+  }
+}
+
+.selectPhoto {
+  position: relative;
+  display: block;
+  padding: 0;
+  background: $color-bg-subtle;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  &[aria-pressed="true"] {
+    border-color: $color-accent-blue;
+    outline: 2px solid $color-accent-blue;
+    outline-offset: 1px;
+  }
+}
+
+.selected,
+.deletePhoto {
+  position: absolute;
+  right: 0.35rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.selected {
+  top: 0.35rem;
+  width: 22px;
+  height: 22px;
+  background: $color-accent-blue;
+  color: $color-bg-sheet;
+}
+
+.deletePhoto {
+  bottom: 0.35rem;
+  width: 30px;
+  height: 30px;
+  border: 1px solid $color-border-default;
+  background: $color-bg-sheet;
+  color: $color-text-secondary;
+
+  &:hover {
+    color: $color-danger;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    opacity: 0;
+
+    .photoTile:hover &,
+    .photoTile:focus-within & {
+      opacity: 1;
+    }
+  }
+}
+
+.removeFromResume {
+  align-self: flex-start;
+  border: 0;
+  background: transparent;
+  color: $color-text-secondary;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  padding: 0.4rem 0;
+
+  &:hover:not(:disabled) {
+    color: $color-danger;
+  }
+}
+
+.galleryError {
+  color: $color-danger;
+  font-size: 0.8125rem;
+}
+
+.uploadTile:disabled,
+.selectPhoto:disabled,
+.deletePhoto:disabled,
+.removeFromResume:disabled {
+  cursor: default;
 }

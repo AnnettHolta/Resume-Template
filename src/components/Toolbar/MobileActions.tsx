@@ -5,6 +5,8 @@ import { Cpu, Download, Ellipsis, RotateCcw, Upload } from "lucide-react";
 import styles from "./Toolbar.module.scss";
 
 interface MobileActionsProps {
+  canEdit?: boolean;
+  canExport?: boolean;
   isMcpConnected: boolean;
   onImport: () => void;
   onSave: () => void;
@@ -13,6 +15,8 @@ interface MobileActionsProps {
 }
 
 export function MobileActions({
+  canEdit = true,
+  canExport = true,
   isMcpConnected,
   onImport,
   onSave,
@@ -49,21 +53,23 @@ export function MobileActions({
   };
 
   const actions = [
-    { label: "Import JSON", Icon: Upload, run: onImport },
-    { label: "Save JSON", Icon: Download, run: onSave },
+    { label: "Import JSON", Icon: Upload, run: onImport, enabled: canEdit },
+    { label: "Save JSON", Icon: Download, run: onSave, enabled: canExport },
     {
       label: "MCP",
       Icon: Cpu,
       run: onOpenMcp,
+      enabled: canEdit,
       className: isMcpConnected ? styles.mobileConnected : undefined,
     },
     {
       label: "Reset",
       Icon: RotateCcw,
       run: onReset,
+      enabled: canEdit,
       className: styles.mobileDestructive,
     },
-  ];
+  ].filter(({ enabled }) => enabled);
 
   return (
     <div
@@ -91,6 +97,7 @@ export function MobileActions({
         aria-label="More actions"
         aria-expanded={isOpen}
         aria-controls={panelId}
+        disabled={actions.length === 0}
         onClick={() => {
           if (isOpen) closeAndFocus();
           else setIsOpen(true);

@@ -49,6 +49,18 @@ export function flushIndexedDbWrites(): void {
   debouncedWrite.flush();
 }
 
+/** Flush pending writes and confirm that the latest value reached IndexedDB. */
+export async function flushIndexedDbWritesConfirmed(): Promise<boolean> {
+  if (status === "error") retryIndexedDbWrite();
+  debouncedWrite.flush();
+  for (;;) {
+    const currentWrites = writes;
+    await currentWrites;
+    if (currentWrites === writes)
+      return status !== "error" && status !== "saving";
+  }
+}
+
 export function cancelIndexedDbWrites(): void {
   debouncedWrite.cancel();
   latest = undefined;

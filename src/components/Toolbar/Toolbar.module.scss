@@ -100,8 +100,13 @@
   box-shadow: $shadow-apple-sm;
   transition: all 0.15s ease;
 
-  &:hover {
+  &:hover:not(:disabled) {
     border-color: $color-text-muted;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 }
 
@@ -122,7 +127,7 @@
 .resetBtn {
   color: $color-text-secondary;
 
-  &:hover {
+  &:hover:not(:disabled) {
     color: $color-danger;
     border-color: $color-danger-border;
   }

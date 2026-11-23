@@ -49,6 +49,70 @@
   }
 }
 
+.editorSections {
+  display: contents;
+}
+
+.accessNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: $radius-md;
+  background: $color-bg-subtle;
+  font-size: 0.875rem;
+
+  > button {
+    border: 0;
+    background: transparent;
+    color: $color-accent-blue;
+    font-weight: 600;
+    padding: 0.35rem 0.5rem;
+  }
+}
+
+.accessDialog {
+  max-width: 22rem;
+  padding: 1.25rem;
+  gap: 0.75rem;
+
+  h2 {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  p {
+    color: $color-text-secondary;
+    font-size: 0.875rem;
+  }
+}
+
+.accessActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+
+  button {
+    padding: 0.45rem 0.85rem;
+    border: 1px solid $color-border-default;
+    border-radius: $radius-pill;
+    background: $color-bg-sheet;
+    color: $color-text-primary;
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .accessPrimary {
+    border-color: $color-text-primary;
+    background: $color-text-primary;
+    color: $color-bg-sheet;
+  }
+}
+
 .footer {
   margin-top: 2rem;
   text-align: center;

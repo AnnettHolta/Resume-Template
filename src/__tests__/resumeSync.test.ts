@@ -39,10 +39,29 @@ function setup(settleDraft: () => void = () => {}) {
     addLocalSkill: () => {
       resume = { ...resume, skills: [...resume.skills, "Local skill"] };
     },
+    switchResume: () => {
+      resume = { ...resume, resumeId: randomUUID() };
+    },
   };
 }
 
 describe("editor-owned MCP commands", () => {
+  it("rejects an MCP revision from a different imported resume", () => {
+    const { run, snapshot, local, switchResume } = setup();
+    switchResume();
+    const { revision } = snapshot();
+    switchResume();
+
+    expect(
+      run({
+        type: "update_profile",
+        revision,
+        patch: { name: "Wrong resume" },
+      }),
+    ).toEqual({ status: "stale" });
+    expect(local().profile.name).toBe(initialResume.profile.name);
+  });
+
   it("preserves a local bullet edit when the agent updates the headline", () => {
     const { run, local, snapshot, changeFirstBullet } = setup();
     const { revision } = snapshot();

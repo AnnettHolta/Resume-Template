@@ -92,3 +92,51 @@ describe("avatarStorage", () => {
     window.removeEventListener(AVATAR_CHANGED_EVENT, changeListener);
   });
 });
+
+it("isolates galleries, keeps removed photos, and clears only the requested resume", async () => {
+  const {
+    changeAvatarGallery,
+    getAvatarGallery,
+    clearAvatarGallery,
+    flushAvatarWrites,
+  } = await import("@/lib/avatarStorage");
+  const blob = new Blob(["photo"], { type: "image/webp" });
+  await changeAvatarGallery("gallery-a", () => ({
+    photos: [{ id: "one", blob }],
+    selectedId: "one",
+  }));
+  await changeAvatarGallery("gallery-a", (gallery) => ({
+    ...gallery,
+    selectedId: null,
+  }));
+  await changeAvatarGallery("gallery-b", () => ({
+    photos: [{ id: "two", blob }],
+    selectedId: "two",
+  }));
+  expect((await getAvatarGallery("gallery-a")).photos).toHaveLength(1);
+  expect((await getAvatarGallery("gallery-a")).selectedId).toBeNull();
+  await clearAvatarGallery("gallery-a");
+  expect((await getAvatarGallery("gallery-a")).photos).toHaveLength(0);
+  expect((await getAvatarGallery("gallery-b")).selectedId).toBe("two");
+  expect(await flushAvatarWrites()).toBe(true);
+  await clearAvatarGallery("gallery-b");
+});
+
+it("does not write after edit authority is lost", async () => {
+  const {
+    changeAvatarGallery,
+    getAvatarGallery,
+    clearAvatarGallery,
+    flushAvatarWrites,
+  } = await import("@/lib/avatarStorage");
+  await expect(
+    changeAvatarGallery(
+      "denied",
+      () => ({ photos: [], selectedId: "bad" }),
+      () => false,
+    ),
+  ).rejects.toThrow();
+  expect((await getAvatarGallery("denied")).selectedId).toBeNull();
+  expect(await flushAvatarWrites()).toBe(true);
+  await clearAvatarGallery("denied");
+});

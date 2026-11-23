@@ -14,9 +14,9 @@ import {
 
 describe("resume JSON import", () => {
   it("round-trips the starter resume in the export format", () => {
-    expect(parseResumeJson(JSON.stringify(initialResume, null, 2))).toEqual(
-      initialResume,
-    );
+    const parsed = parseResumeJson(JSON.stringify(initialResume, null, 2));
+    expect(parsed).toEqual({ ...initialResume, resumeId: expect.any(String) });
+    expect(parseResumeJson(JSON.stringify(parsed))).toEqual(parsed);
   });
 
   it("reports the location of invalid nested data", () => {

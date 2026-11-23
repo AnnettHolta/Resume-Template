@@ -34,10 +34,14 @@
   }
 
   &::backdrop {
-    background: rgba(29, 29, 31, 0.24);
-    backdrop-filter: blur(8px);
+    background: transparent;
     opacity: 0;
     transition: opacity 150ms $overlay-exit;
+  }
+
+  &[data-backdrop]::backdrop {
+    background: rgba(29, 29, 31, 0.24);
+    backdrop-filter: blur(8px);
   }
 
   &[data-visible]::backdrop {

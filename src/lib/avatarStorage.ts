@@ -1,4 +1,4 @@
-import { del, get, set } from "idb-keyval";
+import { del, get, set, update } from "idb-keyval";
 
 export const AVATAR_BLOB_KEY = "resume-template-avatar-v1";
 export const AVATAR_SIZE_PX = 512;
@@ -140,4 +140,76 @@ export async function deleteAvatarBlob(): Promise<void> {
     // Ignore IndexedDB deletion errors
   }
   notifyAvatarChanged();
+}
+
+export interface SavedAvatar {
+  id: string;
+  blob: Blob;
+}
+export interface AvatarGallery {
+  photos: SavedAvatar[];
+  selectedId: string | null;
+}
+const emptyGallery = (): AvatarGallery => ({ photos: [], selectedId: null });
+const galleryKey = (resumeId: string) =>
+  `resume-template-avatar-gallery-v1:${resumeId}`;
+
+export async function getAvatarGallery(
+  resumeId: string,
+): Promise<AvatarGallery> {
+  if (typeof window === "undefined") return emptyGallery();
+  return (await get<AvatarGallery>(galleryKey(resumeId))) ?? emptyGallery();
+}
+
+const pendingWrites = new Set<Promise<unknown>>();
+let writeFailed = false;
+function trackWrite<T>(work: Promise<T>): Promise<T> {
+  pendingWrites.add(work);
+  void work.then(
+    () => pendingWrites.delete(work),
+    () => {
+      writeFailed = true;
+      pendingWrites.delete(work);
+    },
+  );
+  return work;
+}
+
+export async function changeAvatarGallery(
+  resumeId: string,
+  change: (gallery: AvatarGallery) => AvatarGallery,
+  canEdit: () => boolean = () => true,
+): Promise<void> {
+  if (!canEdit()) throw new Error("Editing is no longer available.");
+  await trackWrite(
+    update<AvatarGallery>(galleryKey(resumeId), (current) => {
+      return change(current ?? emptyGallery());
+    }),
+  );
+  notifyAvatarChanged();
+}
+
+export async function clearAvatarGallery(resumeId: string): Promise<void> {
+  await trackWrite(del(galleryKey(resumeId)));
+  notifyAvatarChanged();
+}
+
+/** Call only when adopting the existing local resume, never when importing. */
+export async function migrateLegacyAvatar(resumeId: string): Promise<void> {
+  const blob = await get<Blob>(AVATAR_BLOB_KEY);
+  if (!(blob instanceof Blob)) return;
+  await update<AvatarGallery>(galleryKey(resumeId), (current) => {
+    if (current) return current;
+    const id = crypto.randomUUID();
+    return { photos: [{ id, blob }], selectedId: id };
+  });
+  await del(AVATAR_BLOB_KEY);
+  notifyAvatarChanged();
+}
+
+export async function flushAvatarWrites(): Promise<boolean> {
+  while (pendingWrites.size) await Promise.allSettled([...pendingWrites]);
+  const success = !writeFailed;
+  writeFailed = false;
+  return success;
 }

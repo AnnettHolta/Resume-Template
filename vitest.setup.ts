@@ -8,6 +8,9 @@ vi.mock("idb-keyval", () => ({
   set: vi.fn(async (key: string, val: unknown) => {
     memoryIdb.set(key, val);
   }),
+  update: vi.fn(async (key: string, updater: (value: unknown) => unknown) => {
+    memoryIdb.set(key, updater(memoryIdb.get(key)));
+  }),
   del: vi.fn(async (key: string) => {
     memoryIdb.delete(key);
   }),

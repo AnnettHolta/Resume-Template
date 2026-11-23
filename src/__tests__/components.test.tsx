@@ -8,6 +8,7 @@ import {
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { McpModal } from "@/components/McpModal/McpModal";
+import { ModalController } from "@/components/Modal/ModalController";
 import { PrintModal } from "@/components/PrintModal/PrintModal";
 import { SkillsSection } from "@/components/SkillsSection/SkillsSection";
 import { MobileActions } from "@/components/Toolbar/MobileActions";
@@ -177,6 +178,7 @@ describe("McpModal", () => {
         onTokenChange={onTokenChange}
         onClose={vi.fn()}
       />,
+      { wrapper: ModalController },
     );
 
     fireEvent.click(screen.getByRole("button", { name: /request token/i }));
@@ -219,14 +221,15 @@ describe("McpModal", () => {
     const confirmation = screen.getByRole("dialog", {
       name: /regenerate mcp token/i,
     });
+    const connection = screen.getByRole("dialog", { name: "MCP Connection" });
+    expect(connection).toHaveAttribute("data-backdrop");
+    expect(confirmation).not.toHaveAttribute("data-backdrop");
     expect(
       within(confirmation).getByRole("button", { name: "Keep Current" }),
     ).toHaveFocus();
     fireEvent(confirmation, new Event("cancel", { cancelable: true }));
     await waitFor(() => expect(regenerate).toHaveFocus());
-    expect(
-      screen.getByRole("dialog", { name: "MCP Connection" }),
-    ).toBeInTheDocument();
+    expect(connection).toHaveAttribute("data-backdrop");
 
     fetchMock.mockRestore();
   });

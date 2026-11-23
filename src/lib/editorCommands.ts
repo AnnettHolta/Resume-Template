@@ -25,7 +25,8 @@ export function createEditorCommands({
   return ({ id, command }: ResumeCommandEvent): ResumeCommandResult => {
     if (command.type !== "read") {
       const base = revisions.get(command.revision);
-      if (!base) return { status: "stale" };
+      if (!base || base.resumeId !== readResume().resumeId)
+        return { status: "stale" };
 
       settleDraft(command);
       const outcome = applyResumeEdit(base, readResume(), command);

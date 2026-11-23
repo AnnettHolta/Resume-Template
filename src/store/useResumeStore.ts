@@ -1,14 +1,22 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { deleteAvatarBlob } from "@/lib/avatarStorage";
 import {
   debouncedIndexedDbStorage,
   flushIndexedDbWrites,
 } from "@/lib/indexedDbStorage";
-import { isValidResumeData, MAX_HISTORY_LENGTH } from "@/lib/resumeStorage";
+import {
+  isValidResumeData,
+  MAX_HISTORY_LENGTH,
+  withResumeId,
+} from "@/lib/resumeStorage";
 import type { ResumeData } from "@/types/resume";
 
 export const RESUME_STORE_KEY = "resume-template-history-v1";
+
+let resumeWriteAllowed = true;
+export function setResumeWriteAllowed(allowed: boolean): void {
+  resumeWriteAllowed = allowed;
+}
 
 interface PersistedSlice {
   entries: ResumeData[];
@@ -17,8 +25,11 @@ interface PersistedSlice {
 
 interface ResumeStoreState extends PersistedSlice {
   hasHydrated: boolean;
+  hydrationError: boolean;
   statusMessage: string | null;
   setStatusMessage: (message: string | null) => void;
+  initializeResume: (initialData: ResumeData) => void;
+  importResume: (data: ResumeData, fallbackInitial: ResumeData) => void;
   commitResume: (nextData: ResumeData, fallbackInitial: ResumeData) => void;
   undo: () => void;
   redo: () => void;
@@ -32,14 +43,56 @@ export const useResumeStore = create<ResumeStoreState>()(
         entries: [],
         index: 0,
         hasHydrated: false,
+        hydrationError: false,
         statusMessage: null,
 
         setStatusMessage: (statusMessage) => setTransient({ statusMessage }),
 
-        commitResume: (nextData, fallbackInitial) => {
+        initializeResume: (initialData) => {
+          if (!resumeWriteAllowed) return;
           const { entries, index } = get();
-          const baseEntries = entries.length > 0 ? entries : [fallbackInitial];
-          const currentResume = baseEntries[index] ?? fallbackInitial;
+          const resumeId = withResumeId(entries[index] ?? initialData).resumeId;
+          if (
+            entries.length &&
+            entries.every((entry) => entry.resumeId === resumeId)
+          )
+            return;
+          set({
+            entries: entries.length
+              ? entries.map((entry) =>
+                  entry.resumeId === resumeId ? entry : { ...entry, resumeId },
+                )
+              : [{ ...initialData, resumeId }],
+            index: entries.length ? index : 0,
+          });
+          flushIndexedDbWrites();
+        },
+
+        importResume: (data, fallbackInitial) => {
+          if (!resumeWriteAllowed) return;
+          const incoming = withResumeId(data);
+          const { entries, index } = get();
+          if (entries[index]?.resumeId !== incoming.resumeId) {
+            set({ entries: [incoming], index: 0, statusMessage: null });
+            return;
+          }
+          get().commitResume(incoming, fallbackInitial);
+        },
+
+        commitResume: (nextData, fallbackInitial) => {
+          if (!resumeWriteAllowed) return;
+          const { entries, index } = get();
+          const resumeId = withResumeId(
+            entries[index] ?? fallbackInitial,
+          ).resumeId;
+          const baseEntries =
+            entries.length > 0
+              ? entries.map((entry) =>
+                  entry.resumeId === resumeId ? entry : { ...entry, resumeId },
+                )
+              : [{ ...fallbackInitial, resumeId }];
+          const currentResume = baseEntries[index] ?? baseEntries[0];
+          nextData = { ...nextData, resumeId };
 
           if (JSON.stringify(nextData) === JSON.stringify(currentResume)) {
             return;
@@ -58,6 +111,7 @@ export const useResumeStore = create<ResumeStoreState>()(
         },
 
         undo: () => {
+          if (!resumeWriteAllowed) return;
           const { entries, index } = get();
           if (index <= 0) return;
           set({
@@ -68,6 +122,7 @@ export const useResumeStore = create<ResumeStoreState>()(
         },
 
         redo: () => {
+          if (!resumeWriteAllowed) return;
           const { entries, index } = get();
           if (index >= entries.length - 1) return;
           set({
@@ -78,9 +133,11 @@ export const useResumeStore = create<ResumeStoreState>()(
         },
 
         reset: (initialData) => {
-          void deleteAvatarBlob();
+          if (!resumeWriteAllowed) return;
+          const { entries, index } = get();
+          const resumeId = withResumeId(entries[index] ?? initialData).resumeId;
           set({
-            entries: [initialData],
+            entries: [{ ...initialData, resumeId }],
             index: 0,
             statusMessage: "Reset to initial JSON",
           });
@@ -119,6 +176,7 @@ export const useResumeStore = create<ResumeStoreState>()(
         onRehydrateStorage: () => (_state, error) => {
           setTransient({
             hasHydrated: true,
+            hydrationError: Boolean(error),
             ...(error
               ? {
                   statusMessage: "Could not load saved history on this device.",
@@ -129,3 +187,10 @@ export const useResumeStore = create<ResumeStoreState>()(
       },
     )(setTransient, getState, api),
 );
+
+export function rehydrateResumeStore(): Promise<void> {
+  const store = useResumeStore as typeof useResumeStore & {
+    persist: { rehydrate: () => Promise<void> | void };
+  };
+  return Promise.resolve(store.persist.rehydrate());
+}

@@ -55,7 +55,11 @@ function settleFocusedDraft(edit: ResumeEdit) {
   }
 }
 
-export function useMcpSync(initialData: ResumeData, hasHydrated: boolean) {
+export function useMcpSync(
+  initialData: ResumeData,
+  isWriter: boolean,
+  isWriterNow: () => boolean,
+) {
   const mcpToken = useSyncExternalStore(
     subscribeMcpCookie,
     readMcpCookie,
@@ -65,7 +69,7 @@ export function useMcpSync(initialData: ResumeData, hasHydrated: boolean) {
   const [isEditorConnected, setIsEditorConnected] = useState(false);
 
   useEffect(() => {
-    if (!mcpToken || !hasHydrated) return;
+    if (!mcpToken || !isWriter) return;
     const abort = new AbortController();
     const { commitResume, setStatusMessage } = useResumeStore.getState();
     const handleCommand = createEditorCommands({
@@ -83,7 +87,12 @@ export function useMcpSync(initialData: ResumeData, hasHydrated: boolean) {
       setIsEditorConnected(true);
     });
     events.addEventListener("resume-command", async (event) => {
-      if (abort.signal.aborted || readMcpCookie() !== mcpToken) return;
+      if (
+        !isWriterNow() ||
+        abort.signal.aborted ||
+        readMcpCookie() !== mcpToken
+      )
+        return;
       try {
         const command = ResumeCommandEventSchema.parse(JSON.parse(event.data));
         if (command.expiresAt <= Date.now()) return;
@@ -129,12 +138,12 @@ export function useMcpSync(initialData: ResumeData, hasHydrated: boolean) {
       abort.abort();
       events.close();
     };
-  }, [mcpToken, hasHydrated, initialData]);
+  }, [mcpToken, isWriter, isWriterNow, initialData]);
 
   return {
     mcpToken,
     isMcpExpired,
-    isEditorConnected,
+    isEditorConnected: isWriter && isEditorConnected,
     notifyTokenChange: () => {
       setIsMcpExpired(false);
       setIsEditorConnected(false);

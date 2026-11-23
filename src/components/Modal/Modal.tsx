@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { useModalBackdrop } from "./ModalController";
 import styles from "./Modal.module.scss";
 
 interface ModalProps {
@@ -42,6 +43,7 @@ export function Modal({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const closeDialog = useRef<(() => void) | null>(null);
   const notifyExit = useEffectEvent(() => onExit?.());
+  const attachBackdrop = useModalBackdrop();
   const [showContent, setShowContent] = useState(isOpen);
   if (isOpen && !showContent) setShowContent(true);
   useBodyScrollLock(isOpen);
@@ -55,25 +57,35 @@ export function Modal({
 
       delete dialog.dataset.visible;
       dialog.getBoundingClientRect();
-      const fade = dialog
-        .getAnimations?.()
-        .find(
-          (animation) =>
-            "transitionProperty" in animation &&
-            animation.transitionProperty === "opacity",
-        );
+      const fade = document.hidden
+        ? undefined
+        : dialog
+            .getAnimations?.()
+            .find(
+              (animation) =>
+                "transitionProperty" in animation &&
+                animation.transitionProperty === "opacity",
+            );
       let cancelled = false;
+      const onVisibilityChange = () => {
+        if (document.hidden) finish();
+      };
       const finish = () => {
         if (cancelled) return;
+        cancelled = true;
+        document.removeEventListener("visibilitychange", onVisibilityChange);
         closeDialog.current?.();
         setShowContent(false);
         notifyExit();
       };
-      if (fade) void fade.finished.then(finish, finish);
-      else finish();
+      if (fade) {
+        document.addEventListener("visibilitychange", onVisibilityChange);
+        void fade.finished.then(finish, finish);
+      } else finish();
 
       return () => {
         cancelled = true;
+        document.removeEventListener("visibilitychange", onVisibilityChange);
       };
     }
 
@@ -87,6 +99,7 @@ export function Modal({
       active instanceof HTMLElement && active !== document.body ? active : null;
     const focusScope = opener?.closest("dialog, section, header, nav");
     dialog.showModal();
+    const detachBackdrop = attachBackdrop(dialog);
     dialog.querySelector<HTMLElement>("[data-dialog-focus]")?.focus();
     // Calculate the starting style while the dialog is in the top layer.
     dialog.getBoundingClientRect();
@@ -95,6 +108,7 @@ export function Modal({
     closeDialog.current = () => {
       delete dialog.dataset.visible;
       dialog.close();
+      detachBackdrop();
       closeDialog.current = null;
       // A confirmed deletion can remove the opener during the same commit.
       queueMicrotask(() => {
@@ -109,7 +123,7 @@ export function Modal({
         }
       });
     };
-  }, [isOpen]);
+  }, [isOpen, attachBackdrop]);
 
   useLayoutEffect(() => () => closeDialog.current?.(), []);
 

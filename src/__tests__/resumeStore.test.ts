@@ -10,13 +10,18 @@ import {
   retryIndexedDbWrite,
 } from "@/lib/indexedDbStorage";
 import { MAX_HISTORY_LENGTH } from "@/lib/resumeStorage";
-import { RESUME_STORE_KEY, useResumeStore } from "@/store/useResumeStore";
+import {
+  RESUME_STORE_KEY,
+  setResumeWriteAllowed,
+  useResumeStore,
+} from "@/store/useResumeStore";
 import type { ResumeData } from "@/types/resume";
 
 describe("useResumeStore & debouncedIndexedDbStorage", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     cancelIndexedDbWrites();
+    setResumeWriteAllowed(true);
     useResumeStore.setState({
       entries: [],
       index: 0,
@@ -61,6 +66,30 @@ describe("useResumeStore & debouncedIndexedDbStorage", () => {
     store.reset(base);
     expect(useResumeStore.getState().entries).toHaveLength(1);
     expect(useResumeStore.getState().index).toBe(0);
+  });
+
+  it("migrates legacy history, isolates imports, and blocks writes when read-only", () => {
+    const store = useResumeStore.getState();
+    useResumeStore.setState({
+      entries: [initialResume, { ...initialResume, skills: [] }],
+      index: 1,
+    });
+    store.initializeResume(initialResume);
+    const migrated = useResumeStore.getState().entries;
+    expect(migrated[0].resumeId).toBe(migrated[1].resumeId);
+    expect(migrated[0].resumeId).toBeTruthy();
+    const imported = { ...initialResume, resumeId: crypto.randomUUID() };
+    store.importResume(imported, initialResume);
+    expect(useResumeStore.getState().entries).toEqual([imported]);
+    setResumeWriteAllowed(false);
+    store.reset(initialResume);
+    store.commitResume({ ...initialResume, skills: [] }, initialResume);
+    expect(useResumeStore.getState().entries).toEqual([imported]);
+    setResumeWriteAllowed(true);
+    store.reset(initialResume);
+    expect(useResumeStore.getState().entries[0].resumeId).toBe(
+      imported.resumeId,
+    );
   });
 
   it("caps history at MAX_HISTORY_LENGTH (50)", () => {
@@ -144,7 +173,7 @@ describe("useResumeStore & debouncedIndexedDbStorage", () => {
     expect(getSaveStatus()).toBe("saved");
     const stored = await get<string>(RESUME_STORE_KEY);
     expect(JSON.parse(stored ?? "{}").state).toEqual({
-      entries: [initialResume],
+      entries: [{ ...initialResume, resumeId: expect.any(String) }],
       index: 0,
     });
   });

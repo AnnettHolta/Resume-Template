@@ -15,6 +15,8 @@ import { MobileActions } from "./MobileActions";
 import styles from "./Toolbar.module.scss";
 
 interface ToolbarProps {
+  canEdit: boolean;
+  canExport: boolean;
   canUndo: boolean;
   canRedo: boolean;
   historyPosition: number;
@@ -30,6 +32,8 @@ interface ToolbarProps {
 }
 
 export function Toolbar({
+  canEdit,
+  canExport,
   canUndo,
   canRedo,
   historyPosition,
@@ -93,6 +97,7 @@ export function Toolbar({
             ref={fileInputRef}
             type="file"
             accept="application/json,.json"
+            disabled={!canEdit}
             hidden
             onChange={(e) => {
               const file = e.target.files?.[0];
@@ -109,6 +114,7 @@ export function Toolbar({
             data-tooltip="Import JSON"
             data-tooltip-position="bot"
             aria-label="Import JSON"
+            disabled={!canEdit}
           >
             <Upload size={14} className={styles.mutedIcon} />
             <span className={styles.hideBelowMd}>Import</span>
@@ -120,6 +126,7 @@ export function Toolbar({
             data-tooltip="Save JSON"
             data-tooltip-position="bot"
             aria-label="Save JSON"
+            disabled={!canExport}
           >
             <Download size={14} className={styles.mutedIcon} />
             <span className={styles.hideBelowMd}>Save</span>
@@ -137,6 +144,7 @@ export function Toolbar({
               isMcpConnected ? "MCP connected" : "Configure optional MCP"
             }
             data-tooltip-position="bot"
+            disabled={!canEdit}
           >
             <Cpu size={14} className={styles.mutedIcon} />
             <span>MCP</span>
@@ -151,6 +159,7 @@ export function Toolbar({
             data-tooltip="Reset to initial JSON"
             data-tooltip-position="bot"
             aria-label="Reset"
+            disabled={!canEdit}
           >
             <RotateCcw size={14} />
             <span className={styles.hideBelowMd}>Reset</span>
@@ -172,6 +181,8 @@ export function Toolbar({
             </span>
           </button>
           <MobileActions
+            canEdit={canEdit}
+            canExport={canExport}
             isMcpConnected={isMcpConnected}
             onImport={() => fileInputRef.current?.click()}
             onSave={onDownloadJson}

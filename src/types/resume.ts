@@ -36,6 +36,7 @@ export interface EducationItem {
 }
 
 export interface ResumeData {
+  resumeId?: string;
   profile: ResumeProfile;
   experience: ExperienceItem[];
   education: EducationItem[];

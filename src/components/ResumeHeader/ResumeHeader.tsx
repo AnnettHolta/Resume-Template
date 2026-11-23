@@ -19,9 +19,18 @@ import styles from "./ResumeHeader.module.scss";
 interface ResumeHeaderProps {
   profile: ResumeProfile;
   onCommit: (nextProfile: ResumeProfile) => void;
+  resumeId?: string;
+  canEdit?: boolean;
+  canEditNow?: () => boolean;
 }
 
-export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
+export function ResumeHeader({
+  profile,
+  onCommit,
+  resumeId,
+  canEdit = true,
+  canEditNow,
+}: ResumeHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<ResumeProfile>(profile);
   const [previousProfile, setPreviousProfile] = useState(profile);
@@ -46,7 +55,12 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
       <div className={styles.profileHeader}>
         <div className={styles.topRow}>
           <div className={styles.identityRow}>
-            <AvatarPicker name={profile.name} />
+            <AvatarPicker
+              name={profile.name}
+              resumeId={resumeId}
+              canEdit={canEdit}
+              canEditNow={canEditNow}
+            />
 
             <div className={styles.identity}>
               {isEditing && (
@@ -176,6 +190,7 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
             type="button"
             className={`${styles.editBtn} no-print`}
             onClick={toggleEdit}
+            disabled={!canEdit}
             aria-label={isEditing ? "Finish editing header" : "Edit header"}
           >
             {isEditing ? <Check size={14} /> : <Pencil size={14} />}

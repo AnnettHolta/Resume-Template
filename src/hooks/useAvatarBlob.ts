@@ -1,104 +1,140 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   AVATAR_CHANGED_EVENT,
+  changeAvatarGallery,
   compressImageToWebpBlob,
-  deleteAvatarBlob,
-  getAvatarBlob,
-  saveAvatarBlob,
+  getAvatarGallery,
+  type AvatarGallery,
 } from "@/lib/avatarStorage";
 
-export function useAvatarBlob() {
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const activeUrlRef = useRef<string | null>(null);
-
-  const setObjectUrl = useCallback((blob: Blob | null) => {
-    if (activeUrlRef.current) {
-      URL.revokeObjectURL(activeUrlRef.current);
-      activeUrlRef.current = null;
-    }
-    if (!blob) {
-      setAvatarUrl(null);
-      return;
-    }
-    const nextUrl = URL.createObjectURL(blob);
-    activeUrlRef.current = nextUrl;
-    setAvatarUrl(nextUrl);
-  }, []);
-
-  const refreshAvatar = useCallback(async () => {
-    const blob = await getAvatarBlob();
-    setObjectUrl(blob);
-  }, [setObjectUrl]);
+export function useAvatarBlob(
+  resumeId?: string,
+  canEdit = true,
+  canEditNow?: () => boolean,
+) {
+  const [gallery, setGallery] = useState<AvatarGallery>({
+    photos: [],
+    selectedId: null,
+  });
+  const [urls, setUrls] = useState<Record<string, string>>({});
+  const [isProcessing, setProcessing] = useState(false);
+  const [errorMessage, setError] = useState<string | null>(null);
+  const authority = useRef({ resumeId, canEdit, canEditNow });
+  useLayoutEffect(() => {
+    authority.current = { resumeId, canEdit, canEditNow };
+    return () => {
+      authority.current = { resumeId: undefined, canEdit: false, canEditNow };
+    };
+  }, [resumeId, canEdit, canEditNow]);
+  const allowed = useCallback(
+    (id: string) =>
+      authority.current.resumeId === id &&
+      authority.current.canEdit &&
+      (authority.current.canEditNow?.() ?? true),
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;
-
+    let sequence = 0;
     const load = async () => {
-      const blob = await getAvatarBlob();
-      if (!cancelled) {
-        setObjectUrl(blob);
+      const current = ++sequence;
+      try {
+        const next = resumeId
+          ? await getAvatarGallery(resumeId)
+          : { photos: [], selectedId: null };
+        if (!cancelled && current === sequence) setGallery(next);
+      } catch {
+        if (!cancelled) setError("Could not load saved photos.");
       }
     };
-
     void load();
-
-    const handleAvatarChanged = () => {
-      void load();
-    };
-
-    window.addEventListener(AVATAR_CHANGED_EVENT, handleAvatarChanged);
+    window.addEventListener(AVATAR_CHANGED_EVENT, load);
     return () => {
       cancelled = true;
-      window.removeEventListener(AVATAR_CHANGED_EVENT, handleAvatarChanged);
-      if (activeUrlRef.current) {
-        URL.revokeObjectURL(activeUrlRef.current);
-        activeUrlRef.current = null;
-      }
+      window.removeEventListener(AVATAR_CHANGED_EVENT, load);
     };
-  }, [setObjectUrl]);
+  }, [resumeId]);
+
+  useEffect(() => {
+    const next = Object.fromEntries(
+      gallery.photos.map(({ id, blob }) => [id, URL.createObjectURL(blob)]),
+    );
+    // Object URLs are browser resources and must be created and revoked in an effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setUrls(next);
+    return () => Object.values(next).forEach((url) => URL.revokeObjectURL(url));
+  }, [gallery]);
+
+  const mutate = useCallback(
+    async (change: (gallery: AvatarGallery) => AvatarGallery) => {
+      const id = authority.current.resumeId;
+      if (!id || !allowed(id)) return;
+      setProcessing(true);
+      setError(null);
+      try {
+        await changeAvatarGallery(id, change, () => allowed(id));
+      } catch {
+        setError("Could not save your photo changes.");
+      } finally {
+        setProcessing(false);
+      }
+    },
+    [allowed],
+  );
 
   const uploadAvatar = useCallback(
     async (file: File) => {
+      const id = authority.current.resumeId;
+      if (!id || !allowed(id)) return;
       if (!file.type.startsWith("image/")) {
-        setErrorMessage("Please select an image file.");
+        setError("Please select an image file.");
         return;
       }
-      setIsProcessing(true);
-      setErrorMessage(null);
+      setProcessing(true);
+      setError(null);
       try {
-        const webpBlob = await compressImageToWebpBlob(file);
-        await saveAvatarBlob(webpBlob);
-        setObjectUrl(webpBlob);
+        const blob = await compressImageToWebpBlob(file);
+        if (!allowed(id)) return;
+        const photoId = crypto.randomUUID();
+        await changeAvatarGallery(
+          id,
+          (current) => ({
+            photos: [{ id: photoId, blob }, ...current.photos].slice(0, 5),
+            selectedId: photoId,
+          }),
+          () => allowed(id),
+        );
       } catch {
-        setErrorMessage("Could not process that image.");
+        setError("Could not process or save that image.");
       } finally {
-        setIsProcessing(false);
+        setProcessing(false);
       }
     },
-    [setObjectUrl],
+    [allowed],
   );
 
-  const removeAvatar = useCallback(async () => {
-    setIsProcessing(true);
-    setErrorMessage(null);
-    try {
-      await deleteAvatarBlob();
-      setObjectUrl(null);
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [setObjectUrl]);
-
   return {
-    avatarUrl,
+    gallery,
+    urls,
+    avatarUrl: gallery.selectedId ? (urls[gallery.selectedId] ?? null) : null,
     isProcessing,
     errorMessage,
     uploadAvatar,
-    removeAvatar,
-    refreshAvatar,
+    selectAvatar: (id: string | null) =>
+      mutate((current) => ({ ...current, selectedId: id })),
+    deleteAvatar: (id: string) =>
+      mutate((current) => ({
+        photos: current.photos.filter((photo) => photo.id !== id),
+        selectedId: current.selectedId === id ? null : current.selectedId,
+      })),
   };
 }

@@ -9,7 +9,7 @@ A minimalist, client-first **Resume Template & Editor** built with Next.js 16. E
 ### 1. Inline Editing
 
 - **Header & About:** Click **Edit** in the header to update your name, headline, contact info (location, email, phone, website, LinkedIn, GitHub), and professional summary. Changes commit on blur or when clicking **Done**.
-- **Profile Picture:** Click the circular avatar to upload an image. It is center-cropped and compressed in the browser to a **512×512 WebP `Blob` (80% quality)** and stored directly in IndexedDB. Hover/focus the avatar and click **×** to remove it (with confirmation).
+- **Profile Picture:** Click the avatar to open this resume’s gallery. **Upload photo** is the first tile, followed by the five latest uploads. Selecting a photo updates the resume. **Remove from resume** keeps the photo in the gallery. **Delete saved photo** removes it from this browser.
 - **Experience & Education:** Add, edit, reorder, or delete entries and bullet points inline. Month/year badges use native month pickers (`YYYY-MM` or `Present`).
 - **Skills:** Add skills with autocomplete and automatic alias normalization (e.g., `css` → `CSS3`), drag pills to reorder them, or use **Reorder skills** and the move buttons with a keyboard or touchscreen.
 
@@ -17,7 +17,8 @@ A minimalist, client-first **Resume Template & Editor** built with Next.js 16. E
 
 - Edits are managed in **Zustand** with a **50-step Undo / Redo** stack.
 - Manual and MCP edits share the same history and **IndexedDB** save queue. Writes use a **1-second debounce** and are flushed when the page goes into the background. The editor reports when a write succeeds and offers retry and JSON download if it fails.
-- **Import / Save / Reset:** Use the toolbar to **Import** a resume `.json` file, with field-level feedback for invalid data. **Save** exports the current resume as JSON. **Reset** restores the starter template and clears local history and the avatar after confirmation. On narrow screens, look in **More actions** for Import, Save, MCP, and Reset.
+- **Import / Save / Reset:** **Save** exports a JSON file with a stable `resumeId`. Importing older files without an ID creates a new one. Reimporting a file with the same ID in the same browser opens its saved photos. Photos stay in this browser’s IndexedDB, so upload them again on another device. **Reset** restores the starter template and clears this resume’s local history and photos. On narrow screens, look in **More actions** for Import, Save, MCP, and Reset.
+- **Multiple tabs:** One tab can edit and handle MCP commands. Other tabs open read-only and can request editing access. The active tab saves before handing over, and the requesting tab reloads the saved resume before it can write. Editing requires browser support for Web Locks and BroadcastChannel in a secure context, such as HTTPS or localhost.
 
 ### 3. Print / PDF Export
 

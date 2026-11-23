@@ -11,9 +11,14 @@ import styles from "./SkillsSection.module.scss";
 interface SkillsSectionProps {
   skills: string[];
   onChange: (nextSkills: string[]) => void;
+  canEdit?: boolean;
 }
 
-export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
+export function SkillsSection({
+  skills,
+  onChange,
+  canEdit = true,
+}: SkillsSectionProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [pendingDeleteSkill, setPendingDeleteSkill] = useState<string | null>(
@@ -107,7 +112,7 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
           return (
             <li
               key={skill}
-              draggable={!isReordering}
+              draggable={canEdit && !isReordering}
               aria-label={lowercaseSkill}
               data-skill={lowercaseSkill}
               onDragStart={(e) => {
@@ -116,6 +121,7 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
                 e.dataTransfer.setData("text/plain", skill);
               }}
               onDragOver={(e) => {
+                if (!canEdit) return;
                 e.preventDefault();
                 e.dataTransfer.dropEffect = "move";
                 if (dragOverIndex !== idx) {
@@ -123,6 +129,7 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
                 }
               }}
               onDrop={(e) => {
+                if (!canEdit) return;
                 e.preventDefault();
                 if (draggedIndex !== null) {
                   handleReorderSkill(draggedIndex, idx);

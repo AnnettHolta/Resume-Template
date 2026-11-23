@@ -38,6 +38,7 @@ export const EducationItemSchema = z.object({
 });
 
 export const ResumeDataSchema = z.object({
+  resumeId: z.uuid().optional(),
   profile: ResumeProfileSchema,
   experience: z.array(ExperienceItemSchema),
   education: z.array(EducationItemSchema),
