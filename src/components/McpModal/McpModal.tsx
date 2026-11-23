@@ -1,19 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Check,
-  Copy,
-  Eye,
-  EyeOff,
-  KeyRound,
-  RefreshCw,
-  RotateCcw,
-  Unplug,
-  X,
-} from "lucide-react";
+import { KeyRound, RefreshCw, RotateCcw, X } from "lucide-react";
 import type { ResumeData } from "@/types/resume";
 import { GeneralConfirmModal } from "@/components/GeneralConfirmModal/GeneralConfirmModal";
+import { McpTokenPanel } from "./McpTokenPanel";
 import styles from "./McpModal.module.scss";
 
 interface McpModalProps {
@@ -37,13 +28,11 @@ export function McpModal({
 }: McpModalProps) {
   const [showToken, setShowToken] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [copiedType, setCopiedType] = useState<"token" | "config" | null>(null);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleClose = () => {
     setShowToken(false);
-    setCopiedType(null);
     setError(null);
     onClose();
   };
@@ -53,7 +42,6 @@ export function McpModal({
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !confirmRegenerate) {
         setShowToken(false);
-        setCopiedType(null);
         setError(null);
         onClose();
       }
@@ -105,47 +93,6 @@ export function McpModal({
       setIsLoading(false);
     }
   };
-
-  const copyText = async (text: string, type: "token" | "config") => {
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const textarea = document.createElement("textarea");
-        textarea.value = text;
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-      }
-      setCopiedType(type);
-      setTimeout(() => setCopiedType(null), 1800);
-    } catch {
-      setError("Clipboard permission denied.");
-    }
-  };
-
-  const origin =
-    typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
-
-  const mcpConfigSnippet = token
-    ? JSON.stringify(
-        {
-          mcpServers: {
-            "resume-template": {
-              url: `${origin}/api/mcp`,
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            },
-          },
-        },
-        null,
-        2
-      )
-    : "";
 
   return (
     <>
@@ -221,75 +168,15 @@ export function McpModal({
           )}
 
           {token ? (
-            <div className={styles.tokenSection}>
-              <div className={styles.tokenBox}>
-                <code className={styles.tokenValue}>
-                  {showToken ? token : "••••••••-••••-••••-••••-••••••••••••"}
-                </code>
-                <div className={styles.tokenActions}>
-                  <button
-                    type="button"
-                    className={styles.smallBtn}
-                    onClick={() => setShowToken((prev) => !prev)}
-                    data-tooltip={showToken ? "Hide token" : "Show token"}
-                    data-tooltip-position="top"
-                    aria-label={showToken ? "Hide token" : "Show token"}
-                  >
-                    {showToken ? <EyeOff size={14} /> : <Eye size={14} />}
-                    <span>{showToken ? "Hide" : "Show"}</span>
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.smallBtn}
-                    onClick={() => copyText(token, "token")}
-                    data-tooltip="Copy token"
-                    data-tooltip-position="top"
-                  >
-                    {copiedType === "token" ? (
-                      <Check size={14} />
-                    ) : (
-                      <Copy size={14} />
-                    )}
-                    <span>{copiedType === "token" ? "Copied" : "Copy"}</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className={styles.endpointRow}>
-                <span>Endpoint:</span>
-                <code>{origin}/api/mcp</code>
-                <button
-                  type="button"
-                  className={styles.linkBtn}
-                  onClick={() => copyText(mcpConfigSnippet, "config")}
-                >
-                  {copiedType === "config"
-                    ? "Copied MCP JSON!"
-                    : "Copy MCP Config"}
-                </button>
-              </div>
-
-              <div className={styles.footerRow}>
-                <button
-                  type="button"
-                  className={styles.secondaryBtn}
-                  onClick={() => setConfirmRegenerate(true)}
-                  disabled={isLoading}
-                >
-                  <RefreshCw size={14} />
-                  <span>Regenerate Token</span>
-                </button>
-                <button
-                  type="button"
-                  className={styles.disconnectBtn}
-                  onClick={handleDisconnect}
-                  disabled={isLoading}
-                >
-                  <Unplug size={14} />
-                  <span>Disconnect</span>
-                </button>
-              </div>
-            </div>
+            <McpTokenPanel
+              token={token}
+              showToken={showToken}
+              isLoading={isLoading}
+              onToggleShow={() => setShowToken((prev) => !prev)}
+              onRequestRegenerate={() => setConfirmRegenerate(true)}
+              onDisconnect={handleDisconnect}
+              onError={setError}
+            />
           ) : (
             <div className={styles.emptyBox}>
               <p className={styles.emptyHint}>

@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import { Building2, ImagePlus, Plus, Trash2, X } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Building2, ImagePlus, Trash2 } from "lucide-react";
 import type { ExperienceItem } from "@/types/resume";
 import { DatePickerBadge } from "@/components/DatePickerBadge/DatePickerBadge";
+import { ExperienceBullets } from "./ExperienceBullets";
 import styles from "./ExperienceCard.module.scss";
 
 interface ExperienceCardProps {
@@ -21,9 +22,7 @@ export function ExperienceCard({
   const [prevItem, setPrevItem] = useState<ExperienceItem>(item);
   const [showImageInput, setShowImageInput] = useState(false);
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
-  const bulletRefs = useRef<Array<HTMLTextAreaElement | null>>([]);
 
-  // Sync draft when parent item changes (e.g., undo/redo/reset/import)
   if (item !== prevItem) {
     setPrevItem(item);
     setDraft(item);
@@ -40,47 +39,6 @@ export function ExperienceCard({
     },
     [onCommit]
   );
-
-  const handleBlur = () => {
-    commitItem(draft);
-  };
-
-  const resizeTextarea = (el: HTMLTextAreaElement | null) => {
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
-  };
-
-  const updateBullet = (index: number, value: string) => {
-    setDraft((prev) => {
-      const nextBullets = [...prev.bullets];
-      nextBullets[index] = value;
-      return { ...prev, bullets: nextBullets };
-    });
-  };
-
-  const addBulletAt = (index: number) => {
-    setDraft((prev) => {
-      const nextBullets = [...prev.bullets];
-      nextBullets.splice(index, 0, "");
-      return { ...prev, bullets: nextBullets };
-    });
-    requestAnimationFrame(() => {
-      bulletRefs.current[index]?.focus();
-    });
-  };
-
-  const removeBulletAt = (index: number, focusPrevious = false) => {
-    const nextBullets = draft.bullets.filter((_, idx) => idx !== index);
-    const nextDraft = { ...draft, bullets: nextBullets };
-    setDraft(nextDraft);
-    commitItem(nextDraft);
-    if (focusPrevious && index > 0) {
-      requestAnimationFrame(() => {
-        bulletRefs.current[index - 1]?.focus();
-      });
-    }
-  };
 
   const trimmedLogoSrc = draft.companyImageUrl.trim();
   const showImage = Boolean(trimmedLogoSrc) && failedImageUrl !== trimmedLogoSrc;
@@ -127,7 +85,7 @@ export function ExperienceCard({
                 }));
               }}
               onBlur={() => {
-                handleBlur();
+                commitItem(draft);
                 setShowImageInput(false);
               }}
               onKeyDown={(e) => {
@@ -151,7 +109,7 @@ export function ExperienceCard({
               onChange={(e) =>
                 setDraft((prev) => ({ ...prev, title: e.target.value }))
               }
-              onBlur={handleBlur}
+              onBlur={() => commitItem(draft)}
               placeholder="Role / Title"
               aria-label="Role or title"
             />
@@ -164,7 +122,7 @@ export function ExperienceCard({
                 onChange={(e) =>
                   setDraft((prev) => ({ ...prev, company: e.target.value }))
                 }
-                onBlur={handleBlur}
+                onBlur={() => commitItem(draft)}
                 placeholder="Company"
                 aria-label="Company name"
               />
@@ -188,7 +146,7 @@ export function ExperienceCard({
                     employmentType: e.target.value,
                   }))
                 }
-                onBlur={handleBlur}
+                onBlur={() => commitItem(draft)}
                 placeholder="Full-time"
                 aria-label="Employment type"
               />
@@ -232,7 +190,7 @@ export function ExperienceCard({
                 onChange={(e) =>
                   setDraft((prev) => ({ ...prev, location: e.target.value }))
                 }
-                onBlur={handleBlur}
+                onBlur={() => commitItem(draft)}
                 placeholder="Location"
                 aria-label="Location"
               />
@@ -253,73 +211,16 @@ export function ExperienceCard({
           </div>
         </div>
 
-        <ul
-          className={`${styles.bullets} ${
-            draft.bullets.every((b) => !b.trim()) ? "no-print" : ""
-          }`}
-        >
-          {draft.bullets.map((bullet, idx) => (
-            <li
-              key={`${item.id}-b-${idx}`}
-              className={`${styles.bulletItem} ${
-                !bullet.trim() ? "no-print" : ""
-              }`}
-            >
-              <span className={styles.bulletDot} aria-hidden="true">
-                •
-              </span>
-              <textarea
-                ref={(el) => {
-                  bulletRefs.current[idx] = el;
-                  resizeTextarea(el);
-                }}
-                rows={1}
-                className={`${styles.bulletInput} no-print`}
-                value={bullet}
-                onChange={(e) => {
-                  updateBullet(idx, e.target.value);
-                  resizeTextarea(e.currentTarget);
-                }}
-                onBlur={handleBlur}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    addBulletAt(idx + 1);
-                  } else if (
-                    e.key === "Backspace" &&
-                    bullet === "" &&
-                    draft.bullets.length > 1
-                  ) {
-                    e.preventDefault();
-                    removeBulletAt(idx, true);
-                  }
-                }}
-                placeholder="Describe an achievement or responsibility..."
-                aria-label={`Experience highlight ${idx + 1}`}
-              />
-              <span className={styles.bulletPrintText}>{bullet}</span>
-              <button
-                type="button"
-                className={`${styles.removeBulletBtn} no-print`}
-                onClick={() => removeBulletAt(idx)}
-                aria-label="Remove bullet"
-                data-tooltip="Remove point"
-                data-tooltip-position="left"
-              >
-                <X size={13} />
-              </button>
-            </li>
-          ))}
-        </ul>
-
-        <button
-          type="button"
-          className={`${styles.addBulletBtn} no-print`}
-          onClick={() => addBulletAt(draft.bullets.length)}
-        >
-          <Plus size={13} />
-          <span>Add point</span>
-        </button>
+        <ExperienceBullets
+          itemId={item.id}
+          bullets={draft.bullets}
+          onChangeBullets={(nextBullets, commitNow) => {
+            const nextDraft = { ...draft, bullets: nextBullets };
+            setDraft(nextDraft);
+            if (commitNow) commitItem(nextDraft);
+          }}
+          onBlurCommit={() => commitItem(draft)}
+        />
       </div>
     </article>
   );

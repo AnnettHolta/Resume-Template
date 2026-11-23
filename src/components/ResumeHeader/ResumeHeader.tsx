@@ -13,6 +13,7 @@ import {
   User,
 } from "lucide-react";
 import type { ResumeProfile } from "@/types/resume";
+import { ResumeHeaderForm } from "./ResumeHeaderForm";
 import styles from "./ResumeHeader.module.scss";
 
 interface ResumeHeaderProps {
@@ -34,23 +35,6 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
     }
   };
 
-  const commitDraft = () => {
-    onCommit(draft);
-  };
-
-  const updateContact = (
-    field: keyof ResumeProfile["contact"],
-    value: string
-  ) => {
-    setDraft((prev) => ({
-      ...prev,
-      contact: {
-        ...prev.contact,
-        [field]: value,
-      },
-    }));
-  };
-
   return (
     <header className={styles.wrapper}>
       <div className={styles.profileHeader}>
@@ -62,99 +46,11 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
 
             <div className={styles.identity}>
               {isEditing ? (
-                <div className={styles.editStack}>
-                  <label className={styles.fieldLabel}>
-                    <span>Full Name</span>
-                    <input
-                      type="text"
-                      value={draft.name}
-                      onChange={(e) =>
-                        setDraft((prev) => ({ ...prev, name: e.target.value }))
-                      }
-                      onBlur={commitDraft}
-                      placeholder="John Smith"
-                    />
-                  </label>
-                  <label className={styles.fieldLabel}>
-                    <span>Headline</span>
-                    <input
-                      type="text"
-                      value={draft.headline}
-                      onChange={(e) =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          headline: e.target.value,
-                        }))
-                      }
-                      onBlur={commitDraft}
-                      placeholder="Senior Full-Stack Software Engineer"
-                    />
-                  </label>
-                  <div className={styles.contactGrid}>
-                    <label className={styles.fieldLabel}>
-                      <span>Location</span>
-                      <input
-                        type="text"
-                        value={draft.contact.location}
-                        onChange={(e) =>
-                          updateContact("location", e.target.value)
-                        }
-                        onBlur={commitDraft}
-                      />
-                    </label>
-                    <label className={styles.fieldLabel}>
-                      <span>Email</span>
-                      <input
-                        type="email"
-                        value={draft.contact.email}
-                        onChange={(e) => updateContact("email", e.target.value)}
-                        onBlur={commitDraft}
-                      />
-                    </label>
-                    <label className={styles.fieldLabel}>
-                      <span>Phone</span>
-                      <input
-                        type="tel"
-                        value={draft.contact.phone}
-                        onChange={(e) => updateContact("phone", e.target.value)}
-                        onBlur={commitDraft}
-                      />
-                    </label>
-                    <label className={styles.fieldLabel}>
-                      <span>Website</span>
-                      <input
-                        type="text"
-                        value={draft.contact.website ?? ""}
-                        onChange={(e) =>
-                          updateContact("website", e.target.value)
-                        }
-                        onBlur={commitDraft}
-                      />
-                    </label>
-                    <label className={styles.fieldLabel}>
-                      <span>LinkedIn</span>
-                      <input
-                        type="text"
-                        value={draft.contact.linkedin ?? ""}
-                        onChange={(e) =>
-                          updateContact("linkedin", e.target.value)
-                        }
-                        onBlur={commitDraft}
-                      />
-                    </label>
-                    <label className={styles.fieldLabel}>
-                      <span>GitHub</span>
-                      <input
-                        type="text"
-                        value={draft.contact.github ?? ""}
-                        onChange={(e) =>
-                          updateContact("github", e.target.value)
-                        }
-                        onBlur={commitDraft}
-                      />
-                    </label>
-                  </div>
-                </div>
+                <ResumeHeaderForm
+                  draft={draft}
+                  onChange={setDraft}
+                  onBlurCommit={() => onCommit(draft)}
+                />
               ) : (
                 <>
                   <h1 className={styles.name}>{profile.name}</h1>
@@ -171,9 +67,7 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
                     )}
                     {profile.contact.email && (
                       <>
-                        <span className={styles.dot} aria-hidden="true">
-                          •
-                        </span>
+                        <span className={styles.dot} aria-hidden="true">•</span>
                         <a
                           className={`${styles.metaItem} ${styles.metaLink}`}
                           href={`mailto:${profile.contact.email}`}
@@ -185,9 +79,7 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
                     )}
                     {profile.contact.phone && (
                       <>
-                        <span className={styles.dot} aria-hidden="true">
-                          •
-                        </span>
+                        <span className={styles.dot} aria-hidden="true">•</span>
                         <a
                           className={`${styles.metaItem} ${styles.metaLink}`}
                           href={`tel:${profile.contact.phone}`}
@@ -288,7 +180,7 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
               onChange={(e) =>
                 setDraft((prev) => ({ ...prev, summary: e.target.value }))
               }
-              onBlur={commitDraft}
+              onBlur={() => onCommit(draft)}
               placeholder="Write a concise professional summary..."
             />
           ) : (

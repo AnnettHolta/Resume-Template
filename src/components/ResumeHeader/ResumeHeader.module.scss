@@ -61,10 +61,7 @@
   }
 }
 
-.identity {
-  flex: 1;
-  min-width: 0;
-}
+.identity { flex: 1; min-width: 0; }
 
 .name {
   font-family: $font-display;
@@ -73,10 +70,7 @@
   letter-spacing: -0.024em;
   line-height: 1.15;
   color: $color-text-primary;
-
-  @media (max-width: 640px) {
-    font-size: 1.5rem;
-  }
+  @media (max-width: 640px) { font-size: 1.5rem; }
 }
 
 .headline {
@@ -85,11 +79,8 @@
   font-weight: 500;
   letter-spacing: -0.015em;
   color: $color-text-secondary;
-
   @media print {
-    :global(html:not([data-print-mode="visual"])) & {
-      color: #222222;
-    }
+    :global(html:not([data-print-mode="visual"])) & { color: #222222; }
   }
 }
 
@@ -102,42 +93,26 @@
   font-style: normal;
   font-size: 0.8125rem;
   color: $color-text-secondary;
-
   @media print {
-    :global(html:not([data-print-mode="visual"])) & {
-      color: #000000;
-    }
+    :global(html:not([data-print-mode="visual"])) & { color: #000000; }
   }
 }
 
-.metaItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-}
+.metaItem { display: inline-flex; align-items: center; gap: 0.375rem; }
 
 .metaIcon {
   color: $color-text-muted;
-
   @media print {
-    :global(html:not([data-print-mode="visual"])) & {
-      color: #000000;
-    }
+    :global(html:not([data-print-mode="visual"])) & { color: #000000; }
   }
 }
 
 .metaLink {
   transition: color 0.15s ease;
-
-  &:hover {
-    color: $color-accent-blue;
-  }
+  &:hover { color: $color-accent-blue; }
 }
 
-.dot {
-  color: $color-border-default;
-  user-select: none;
-}
+.dot { color: $color-border-default; user-select: none; }
 
 .socialPills {
   margin-top: 0.75rem;
