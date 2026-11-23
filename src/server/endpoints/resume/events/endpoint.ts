@@ -9,6 +9,7 @@ import {
 } from "@/server/storage/editorSessions";
 import {
   extractEditorCredential,
+  extractMcpCookieToken,
   extractMcpToken,
 } from "@/server/storage/tokenUtils";
 
@@ -18,8 +19,11 @@ const eventRoute = createRoute({
   tags: ["Resume"],
   summary: "Connect the browser editor to MCP commands",
   responses: {
-    200: { description: "Server-Sent Events stream of editor commands" },
-    401: { description: "Missing or expired editor credentials" },
+    200: {
+      description:
+        "Editor command stream or a session-expired event for a stale browser session",
+    },
+    401: { description: "Missing or invalid editor credentials" },
   },
 });
 
@@ -51,8 +55,16 @@ function editorToken(headers: Headers) {
 
 export function registerEditorEndpoints(app: OpenAPIHono) {
   app.openapi(eventRoute, (c) => {
-    const token = editorToken(c.req.raw.headers);
-    if (!token) return c.body(null, 401);
+    const headers = c.req.raw.headers;
+    const token = editorToken(headers);
+    if (!token) {
+      if (headers.has("authorization") || !extractMcpCookieToken(headers)) {
+        return c.body(null, 401);
+      }
+      return streamSSE(c, async (stream) => {
+        await stream.writeSSE({ event: "session-expired", data: "{}" });
+      });
+    }
 
     return streamSSE(c, async (stream) => {
       const disconnect = connectEditor(token, {

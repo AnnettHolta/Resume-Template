@@ -154,7 +154,9 @@ export function McpModal({
         ) : (
           <div className={styles.emptyBox}>
             <p className={styles.emptyHint}>
-              Request a token to let an agent read and edit this resume.
+              {isSessionExpired
+                ? "Your MCP session ended. Request a new token to reconnect."
+                : "Request a token to let an agent read and edit this resume."}
             </p>
             <button
               type="button"

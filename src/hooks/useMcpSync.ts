@@ -18,7 +18,8 @@ function readMcpCookie() {
     .split(";")
     .map((part) => part.trim())
     .find((part) => part.startsWith(`${MCP_COOKIE_NAME}=`));
-  return cookie?.slice(MCP_COOKIE_NAME.length + 1) || null;
+  const token = cookie?.slice(MCP_COOKIE_NAME.length + 1);
+  return token && /^[a-zA-Z0-9_-]{16,64}$/.test(token) ? token : null;
 }
 
 function subscribeMcpCookie(callback: () => void) {
@@ -69,7 +70,7 @@ export function useMcpSync(
   const [isEditorConnected, setIsEditorConnected] = useState(false);
 
   useEffect(() => {
-    if (!mcpToken || !isWriter) return;
+    if (!mcpToken || !isWriter || readMcpCookie() !== mcpToken) return;
     const abort = new AbortController();
     const { commitResume, setStatusMessage } = useResumeStore.getState();
     const handleCommand = createEditorCommands({
@@ -85,6 +86,16 @@ export function useMcpSync(
     events.addEventListener("connected", () => {
       setIsMcpExpired(false);
       setIsEditorConnected(true);
+    });
+    events.addEventListener("session-expired", () => {
+      events.close();
+      if (abort.signal.aborted || readMcpCookie() !== mcpToken) return;
+
+      const secure = window.location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `${MCP_COOKIE_NAME}=; Path=/; Max-Age=0; SameSite=Strict${secure}`;
+      setIsEditorConnected(false);
+      setIsMcpExpired(true);
+      window.dispatchEvent(new Event(MCP_COOKIE_EVENT));
     });
     events.addEventListener("resume-command", async (event) => {
       if (

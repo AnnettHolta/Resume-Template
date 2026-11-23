@@ -44,6 +44,11 @@ export function extractEditorCredential(headers: Headers): string | null {
   return isValidMcpToken(owner) ? owner : null;
 }
 
+export function extractMcpCookieToken(headers: Headers): string | null {
+  const token = parseCookieValue(headers.get("cookie"), MCP_TOKEN_COOKIE);
+  return isValidMcpToken(token) ? token : null;
+}
+
 export function extractMcpToken(headers: Headers): string | null {
   const authHeader = headers.get("authorization");
   if (authHeader?.startsWith("Bearer ")) {
@@ -51,12 +56,7 @@ export function extractMcpToken(headers: Headers): string | null {
     if (isValidMcpToken(bearer)) return bearer;
   }
 
-  const cookieToken = parseCookieValue(headers.get("cookie"), MCP_TOKEN_COOKIE);
-  if (isValidMcpToken(cookieToken)) {
-    return cookieToken;
-  }
-
-  return null;
+  return extractMcpCookieToken(headers);
 }
 
 export function isHttpsRequest(req: Request): boolean {

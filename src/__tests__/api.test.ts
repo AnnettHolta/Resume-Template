@@ -41,6 +41,23 @@ describe("editor session and MCP API", () => {
     expect((await apiApp.request("/api/docs")).status).toBe(200);
   });
 
+  it("ends the event stream cleanly when the browser keeps a revoked cookie", async () => {
+    const session = await createSession();
+    await apiApp.request("/api/session", {
+      method: "DELETE",
+      headers: session.auth,
+    });
+    const response = await apiApp.request("/api/resume/events", {
+      headers: session.browser,
+    });
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toContain("text/event-stream");
+    await expect(response.text()).resolves.toBe(
+      "event: session-expired\ndata: {}\n\n",
+    );
+    expect((await apiApp.request("/api/resume/events")).status).toBe(401);
+  });
+
   it("allows only the browser owner to connect or rotate and revokes the old token", async () => {
     expect((await apiApp.request("/api/resume")).status).toBe(401);
     const session = await createSession();
