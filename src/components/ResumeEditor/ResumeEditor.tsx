@@ -1,23 +1,15 @@
 "use client";
 
-import { useCallback, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect } from "react";
 import type {
   EducationItem,
   ExperienceItem,
   ResumeData,
   ResumeProfile,
 } from "@/types/resume";
-import {
-  clearResumeStorage,
-  downloadResumeJson,
-  isValidResumeData,
-  loadSavedHistory,
-  loadSavedResume,
-  MAX_HISTORY_LENGTH,
-  saveHistoryToStorage,
-  saveResumeToStorage,
-  type StoredHistoryState,
-} from "@/lib/resumeStorage";
+import { flushIndexedDbWrites } from "@/lib/indexedDbStorage";
+import { downloadResumeJson, isValidResumeData } from "@/lib/resumeStorage";
+import { useResumeStore } from "@/store/useResumeStore";
 import { Toolbar } from "@/components/Toolbar/Toolbar";
 import { ResumeHeader } from "@/components/ResumeHeader/ResumeHeader";
 import { ExperienceSection } from "@/components/ExperienceSection/ExperienceSection";
@@ -29,104 +21,39 @@ interface ResumeEditorProps {
   initialData: ResumeData;
 }
 
-const STORE_EVENT = "resume-editor-store-change";
-
-function subscribeToStore(callback: () => void) {
-  window.addEventListener(STORE_EVENT, callback);
-  window.addEventListener("storage", callback);
-  return () => {
-    window.removeEventListener(STORE_EVENT, callback);
-    window.removeEventListener("storage", callback);
-  };
-}
-
 export function ResumeEditor({ initialData }: ResumeEditorProps) {
-  const [statusMessage, setStatusMessage] = useState<string | null>(null);
-  const serverSnapshotRef = useRef<StoredHistoryState>({
-    entries: [initialData],
-    index: 0,
-  });
-  const clientCacheRef = useRef<{
-    rawKey: string | null;
-    snapshot: StoredHistoryState;
-  } | null>(null);
+  const entries = useResumeStore((s) => s.entries);
+  const index = useResumeStore((s) => s.index);
+  const hasHydrated = useResumeStore((s) => s.hasHydrated);
+  const statusMessage = useResumeStore((s) => s.statusMessage);
+  const commitResume = useResumeStore((s) => s.commitResume);
+  const undo = useResumeStore((s) => s.undo);
+  const redo = useResumeStore((s) => s.redo);
+  const reset = useResumeStore((s) => s.reset);
+  const setStatusMessage = useResumeStore((s) => s.setStatusMessage);
 
-  const getClientSnapshot = useCallback((): StoredHistoryState => {
-    const savedHistory = loadSavedHistory();
-    if (savedHistory) {
-      const key = JSON.stringify(savedHistory);
-      if (clientCacheRef.current?.rawKey === key) {
-        return clientCacheRef.current.snapshot;
+  useEffect(() => {
+    const handleFlush = () => {
+      flushIndexedDbWrites();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        flushIndexedDbWrites();
       }
-      clientCacheRef.current = { rawKey: key, snapshot: savedHistory };
-      return savedHistory;
-    }
+    };
 
-    const savedResume = loadSavedResume();
-    if (savedResume) {
-      const fallback: StoredHistoryState = { entries: [savedResume], index: 0 };
-      const key = JSON.stringify(fallback);
-      if (clientCacheRef.current?.rawKey === key) {
-        return clientCacheRef.current.snapshot;
-      }
-      clientCacheRef.current = { rawKey: key, snapshot: fallback };
-      return fallback;
-    }
-
-    return serverSnapshotRef.current;
+    window.addEventListener("pagehide", handleFlush);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      flushIndexedDbWrites();
+      window.removeEventListener("pagehide", handleFlush);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
-  const historyState = useSyncExternalStore(
-    subscribeToStore,
-    getClientSnapshot,
-    () => serverSnapshotRef.current
-  );
-
-  const { entries: history, index: historyIndex } = historyState;
-  const currentResume = history[historyIndex] ?? initialData;
-
-  const persistState = useCallback((nextState: StoredHistoryState) => {
-    const activeResume = nextState.entries[nextState.index];
-    saveResumeToStorage(activeResume);
-    saveHistoryToStorage(nextState);
-    window.dispatchEvent(new Event(STORE_EVENT));
-  }, []);
-
-  const commitResume = useCallback(
-    (nextData: ResumeData) => {
-      if (JSON.stringify(nextData) === JSON.stringify(currentResume)) {
-        return;
-      }
-
-      const nextHistory = [...history.slice(0, historyIndex + 1), nextData].slice(
-        -MAX_HISTORY_LENGTH
-      );
-      const nextIndex = nextHistory.length - 1;
-
-      persistState({ entries: nextHistory, index: nextIndex });
-      setStatusMessage("Saved to local storage");
-    },
-    [currentResume, history, historyIndex, persistState]
-  );
-
-  const handleUndo = () => {
-    if (historyIndex <= 0) return;
-    persistState({ entries: history, index: historyIndex - 1 });
-    setStatusMessage("Undid change");
-  };
-
-  const handleRedo = () => {
-    if (historyIndex >= history.length - 1) return;
-    persistState({ entries: history, index: historyIndex + 1 });
-    setStatusMessage("Redid change");
-  };
-
-  const handleReset = () => {
-    clearResumeStorage();
-    clientCacheRef.current = null;
-    window.dispatchEvent(new Event(STORE_EVENT));
-    setStatusMessage("Reset to initial JSON");
-  };
+  const activeEntries = hasHydrated && entries.length > 0 ? entries : [initialData];
+  const activeIndex = hasHydrated && entries.length > 0 ? index : 0;
+  const currentResume = activeEntries[activeIndex] ?? initialData;
 
   const handleImportJson = async (file: File) => {
     try {
@@ -136,7 +63,7 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
         setStatusMessage("Invalid resume JSON format");
         return;
       }
-      commitResume(parsed);
+      commitResume(parsed, initialData);
       setStatusMessage("Imported JSON");
     } catch {
       setStatusMessage("Failed to parse JSON file");
@@ -144,33 +71,33 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
   };
 
   const handleProfileCommit = (nextProfile: ResumeProfile) => {
-    commitResume({ ...currentResume, profile: nextProfile });
+    commitResume({ ...currentResume, profile: nextProfile }, initialData);
   };
 
   const handleExperienceChange = (nextExperience: ExperienceItem[]) => {
-    commitResume({ ...currentResume, experience: nextExperience });
+    commitResume({ ...currentResume, experience: nextExperience }, initialData);
   };
 
   const handleEducationChange = (nextEducation: EducationItem[]) => {
-    commitResume({ ...currentResume, education: nextEducation });
+    commitResume({ ...currentResume, education: nextEducation }, initialData);
   };
 
   const handleSkillsChange = (nextSkills: string[]) => {
-    commitResume({ ...currentResume, skills: nextSkills });
+    commitResume({ ...currentResume, skills: nextSkills }, initialData);
   };
 
   return (
     <div className={styles.wrapper}>
       <Toolbar
-        canUndo={historyIndex > 0}
-        canRedo={historyIndex < history.length - 1}
-        historyPosition={historyIndex + 1}
-        historyTotal={history.length}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
+        canUndo={activeIndex > 0}
+        canRedo={activeIndex < activeEntries.length - 1}
+        historyPosition={activeIndex + 1}
+        historyTotal={activeEntries.length}
+        onUndo={undo}
+        onRedo={redo}
         onDownloadJson={() => downloadResumeJson(currentResume)}
         onImportJson={handleImportJson}
-        onReset={handleReset}
+        onReset={() => reset(initialData)}
         onPrint={() => window.print()}
       />
 
@@ -196,10 +123,8 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
 
         <footer className={`${styles.footer} no-print`} role="status">
           <p>
-            {statusMessage
-              ? `${statusMessage} · `
-              : ""}
-            All changes are automatically cached to local storage.
+            {statusMessage ? `${statusMessage} · ` : ""}
+            History is automatically saved to IndexedDB (6s debounce).
           </p>
         </footer>
       </main>
