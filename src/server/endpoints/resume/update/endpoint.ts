@@ -1,5 +1,8 @@
 import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
-import { writeSessionResume } from "@/server/storage/resumeFileStore";
+import {
+  isSessionActive,
+  writeSessionResume,
+} from "@/server/storage/resumeFileStore";
 import { extractMcpToken } from "@/server/storage/tokenUtils";
 import { UpdateResumeRequestSchema } from "./request";
 import { UpdateResumeErrorSchema, UpdateResumeResponseSchema } from "./response";
@@ -8,7 +11,7 @@ const route = createRoute({
   method: "put",
   path: "/resume",
   tags: ["Resume"],
-  summary: "Persist browser resume edits for the active MCP session token",
+  summary: "Sync browser resume edits to the active runtime MCP session",
   request: {
     body: {
       content: {
@@ -28,7 +31,7 @@ const route = createRoute({
       },
     },
     401: {
-      description: "Missing or invalid MCP session token",
+      description: "Missing, expired, or revoked MCP session token",
       content: {
         "application/json": {
           schema: UpdateResumeErrorSchema,
@@ -41,13 +44,16 @@ const route = createRoute({
 export function registerUpdateResumeEndpoint(app: OpenAPIHono) {
   app.openapi(route, async (c) => {
     const token = extractMcpToken(c.req.raw.headers);
-    if (!token) {
-      return c.json({ error: "Missing or invalid MCP session token" }, 401);
+    if (!token || !isSessionActive(token)) {
+      return c.json({ error: "Missing, expired, or revoked MCP session token" }, 401);
     }
 
     const body = c.req.valid("json");
-    await writeSessionResume(token, body, "browser");
+    const version = writeSessionResume(token, body, "browser");
+    if (version === null) {
+      return c.json({ error: "Missing, expired, or revoked MCP session token" }, 401);
+    }
+
     return c.json({ saved: true }, 200);
   });
 }
-

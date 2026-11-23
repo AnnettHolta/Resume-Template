@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { debounce } from "lodash-es";
 import type {
   EducationItem,
@@ -27,6 +27,7 @@ interface ResumeEditorProps {
 }
 
 const MCP_COOKIE_NAME = "resumeMcpToken";
+const MCP_COOKIE_EVENT = "resume-mcp-cookie-change";
 
 function readMcpCookie(): string | null {
   if (typeof document === "undefined") return null;
@@ -41,6 +42,11 @@ function readMcpCookie(): string | null {
   return null;
 }
 
+function subscribeMcpCookie(callback: () => void) {
+  window.addEventListener(MCP_COOKIE_EVENT, callback);
+  return () => window.removeEventListener(MCP_COOKIE_EVENT, callback);
+}
+
 export function ResumeEditor({ initialData }: ResumeEditorProps) {
   const entries = useResumeStore((s) => s.entries);
   const index = useResumeStore((s) => s.index);
@@ -52,7 +58,13 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
   const reset = useResumeStore((s) => s.reset);
   const setStatusMessage = useResumeStore((s) => s.setStatusMessage);
 
-  const [mcpToken, setMcpToken] = useState<string | null>(() => readMcpCookie());
+  const mcpToken = useSyncExternalStore(
+    subscribeMcpCookie,
+    readMcpCookie,
+    () => null
+  );
+  const [isMcpExpired, setIsMcpExpired] = useState(false);
+  const [mcpSessionNonce, setMcpSessionNonce] = useState(0);
   const [isMcpModalOpen, setIsMcpModalOpen] = useState(false);
   const skipNextRemoteSyncRef = useRef(false);
 
@@ -62,14 +74,22 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
 
   const debouncedServerSync = useMemo(
     () =>
-      debounce((data: ResumeData) => {
-        void fetch("/api/resume", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        });
+      debounce(async (data: ResumeData) => {
+        try {
+          const res = await fetch("/api/resume", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+          if (res.status === 401) {
+            setIsMcpExpired(true);
+            setStatusMessage("MCP session expired — click MCP to revalidate");
+          }
+        } catch {
+          // Ignore transient network errors
+        }
       }, HISTORY_PERSIST_DEBOUNCE_MS),
-    []
+    [setStatusMessage]
   );
 
   // Flush both IndexedDB and optional server sync on page hide / unmount
@@ -95,18 +115,54 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
 
   // Browser -> Server 1s debounced sync (only when optional MCP token is active)
   useEffect(() => {
-    if (!mcpToken || !hasHydrated) return;
+    if (!mcpToken || isMcpExpired || !hasHydrated) return;
     if (skipNextRemoteSyncRef.current) {
       skipNextRemoteSyncRef.current = false;
       return;
     }
     debouncedServerSync(currentResume);
-  }, [currentResume, mcpToken, hasHydrated, debouncedServerSync]);
+  }, [
+    currentResume,
+    mcpToken,
+    isMcpExpired,
+    hasHydrated,
+    debouncedServerSync,
+  ]);
 
-  // Server (MCP) -> Browser live SSE updates (only when optional MCP token is active)
+  // Server (MCP) -> Browser live SSE updates + reconnect catch-up
   useEffect(() => {
-    if (!mcpToken) return;
+    if (!mcpToken || isMcpExpired) return;
+    let isCancelled = false;
+    let hasConnectedOnce = false;
+
     const eventSource = new EventSource("/api/resume/events");
+
+    eventSource.onopen = async () => {
+      if (isCancelled) return;
+      if (!hasConnectedOnce) {
+        hasConnectedOnce = true;
+        return;
+      }
+      // Catch up on any MCP edits missed while disconnected
+      try {
+        const res = await fetch("/api/resume");
+        if (res.status === 401) {
+          setIsMcpExpired(true);
+          eventSource.close();
+          return;
+        }
+        if (res.ok) {
+          const data = (await res.json()) as unknown;
+          if (!isCancelled && isValidResumeData(data)) {
+            debouncedServerSync.cancel();
+            skipNextRemoteSyncRef.current = true;
+            commitResume(data, initialData);
+          }
+        }
+      } catch {
+        // Ignore transient catch-up errors
+      }
+    };
 
     eventSource.addEventListener("resume-updated", (event) => {
       try {
@@ -114,6 +170,7 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
           data?: ResumeData;
         };
         if (payload.data && isValidResumeData(payload.data)) {
+          debouncedServerSync.cancel();
           skipNextRemoteSyncRef.current = true;
           commitResume(payload.data, initialData);
           setStatusMessage("Synced update from MCP");
@@ -123,10 +180,33 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
       }
     });
 
+    eventSource.onerror = async () => {
+      // Check if error was due to 401 expired/revoked token
+      try {
+        const res = await fetch("/api/resume");
+        if (!isCancelled && res.status === 401) {
+          setIsMcpExpired(true);
+          setStatusMessage("MCP session expired — click MCP to revalidate");
+          eventSource.close();
+        }
+      } catch {
+        // Keep EventSource open for normal network reconnect
+      }
+    };
+
     return () => {
+      isCancelled = true;
       eventSource.close();
     };
-  }, [mcpToken, commitResume, initialData, setStatusMessage]);
+  }, [
+    mcpToken,
+    isMcpExpired,
+    mcpSessionNonce,
+    commitResume,
+    initialData,
+    setStatusMessage,
+    debouncedServerSync,
+  ]);
 
   const handleImportJson = async (file: File) => {
     try {
@@ -166,7 +246,7 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
         canRedo={activeIndex < activeEntries.length - 1}
         historyPosition={activeIndex + 1}
         historyTotal={activeEntries.length}
-        isMcpConnected={Boolean(mcpToken)}
+        isMcpConnected={Boolean(mcpToken) && !isMcpExpired}
         onUndo={undo}
         onRedo={redo}
         onDownloadJson={() => downloadResumeJson(currentResume)}
@@ -207,8 +287,17 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
       <McpModal
         isOpen={isMcpModalOpen}
         token={mcpToken}
+        isSessionExpired={isMcpExpired}
         currentResume={currentResume}
-        onTokenChange={setMcpToken}
+        onTokenChange={(next) => {
+          window.dispatchEvent(new Event(MCP_COOKIE_EVENT));
+          if (!next) setIsMcpExpired(false);
+        }}
+        onSessionRevalidated={() => {
+          setIsMcpExpired(false);
+          setMcpSessionNonce((n) => n + 1);
+          setStatusMessage("MCP session active");
+        }}
         onClose={() => setIsMcpModalOpen(false)}
       />
     </div>

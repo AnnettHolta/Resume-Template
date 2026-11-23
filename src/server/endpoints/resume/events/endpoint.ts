@@ -1,6 +1,9 @@
 import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
 import { streamSSE } from "hono/streaming";
-import { subscribeToResumeUpdates } from "@/server/storage/resumeFileStore";
+import {
+  isSessionActive,
+  subscribeToResumeUpdates,
+} from "@/server/storage/resumeFileStore";
 import { extractMcpToken } from "@/server/storage/tokenUtils";
 import { ResumeEventsUnauthorizedSchema } from "./response";
 
@@ -14,7 +17,7 @@ const route = createRoute({
       description: "SSE stream of resume update events",
     },
     401: {
-      description: "Missing or invalid MCP session token",
+      description: "Missing, expired, or revoked MCP session token",
       content: {
         "application/json": {
           schema: ResumeEventsUnauthorizedSchema,
@@ -27,8 +30,11 @@ const route = createRoute({
 export function registerResumeEventsEndpoint(app: OpenAPIHono) {
   app.openapi(route, async (c) => {
     const token = extractMcpToken(c.req.raw.headers);
-    if (!token) {
-      return c.json({ error: "Missing or invalid MCP session token" }, 401);
+    if (!token || !isSessionActive(token)) {
+      return c.json(
+        { error: "Missing, expired, or revoked MCP session token" },
+        401
+      );
     }
 
     return streamSSE(c, async (stream) => {
@@ -63,4 +69,3 @@ export function registerResumeEventsEndpoint(app: OpenAPIHono) {
     });
   });
 }
-

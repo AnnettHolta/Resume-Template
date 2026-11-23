@@ -1,7 +1,9 @@
 import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
-import { readSessionResume } from "@/server/storage/resumeFileStore";
+import {
+  isSessionActive,
+  readSessionResume,
+} from "@/server/storage/resumeFileStore";
 import { extractMcpToken } from "@/server/storage/tokenUtils";
-import { GetResumeQuerySchema } from "./request";
 import { GetResumeResponseSchema, UnauthorizedResponseSchema } from "./response";
 
 const route = createRoute({
@@ -9,9 +11,6 @@ const route = createRoute({
   path: "/resume",
   tags: ["Resume"],
   summary: "Get the resume for the active MCP session token",
-  request: {
-    query: GetResumeQuerySchema,
-  },
   responses: {
     200: {
       description: "Resume data",
@@ -22,7 +21,7 @@ const route = createRoute({
       },
     },
     401: {
-      description: "Missing or invalid MCP session token",
+      description: "Missing, expired, or revoked MCP session token",
       content: {
         "application/json": {
           schema: UnauthorizedResponseSchema,
@@ -34,14 +33,16 @@ const route = createRoute({
 
 export function registerGetResumeEndpoint(app: OpenAPIHono) {
   app.openapi(route, async (c) => {
-    const { token: queryToken } = c.req.valid("query");
-    const token = extractMcpToken(c.req.raw.headers, queryToken);
-    if (!token) {
-      return c.json({ error: "Missing or invalid MCP session token" }, 401);
+    const token = extractMcpToken(c.req.raw.headers);
+    if (!token || !isSessionActive(token)) {
+      return c.json({ error: "Missing, expired, or revoked MCP session token" }, 401);
     }
 
-    const data = await readSessionResume(token);
-    return c.json(data, 200);
+    const session = readSessionResume(token);
+    if (!session) {
+      return c.json({ error: "Missing, expired, or revoked MCP session token" }, 401);
+    }
+
+    return c.json(session.data, 200);
   });
 }
-

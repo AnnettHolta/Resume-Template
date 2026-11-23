@@ -34,18 +34,11 @@ export function parseCookieValue(
   return null;
 }
 
-export function extractMcpToken(
-  headers: Headers,
-  queryToken?: string | null
-): string | null {
+export function extractMcpToken(headers: Headers): string | null {
   const authHeader = headers.get("authorization");
   if (authHeader?.startsWith("Bearer ")) {
     const bearer = authHeader.slice(7).trim();
     if (isValidMcpToken(bearer)) return bearer;
-  }
-
-  if (queryToken && isValidMcpToken(queryToken)) {
-    return queryToken;
   }
 
   const cookieToken = parseCookieValue(headers.get("cookie"), MCP_TOKEN_COOKIE);
@@ -56,3 +49,10 @@ export function extractMcpToken(
   return null;
 }
 
+export function isHttpsRequest(req: Request): boolean {
+  const forwarded = req.headers.get("x-forwarded-proto");
+  if (forwarded) {
+    return forwarded.split(",")[0].trim().toLowerCase() === "https";
+  }
+  return req.url.startsWith("https://");
+}

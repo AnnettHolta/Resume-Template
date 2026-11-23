@@ -16,12 +16,20 @@ export function createResumeMcpServer(token: string): McpServer {
     version: "1.0.0",
   });
 
+  const requireSession = () => {
+    const session = readSessionResume(token);
+    if (!session) {
+      throw new Error("MCP session is expired or revoked");
+    }
+    return session.data;
+  };
+
   server.tool(
     "get_resume",
     "Read the current resume JSON for this session",
     {},
     async () => {
-      const data = await readSessionResume(token);
+      const data = requireSession();
       return {
         content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
       };
@@ -47,7 +55,7 @@ export function createResumeMcpServer(token: string): McpServer {
         .optional(),
     },
     async (args) => {
-      const current = await readSessionResume(token);
+      const current = requireSession();
       const next = {
         ...current,
         profile: {
@@ -61,7 +69,7 @@ export function createResumeMcpServer(token: string): McpServer {
           },
         },
       };
-      await writeSessionResume(token, next, "mcp");
+      writeSessionResume(token, next, "mcp");
       return {
         content: [{ type: "text", text: JSON.stringify(next.profile, null, 2) }],
       };
@@ -75,13 +83,13 @@ export function createResumeMcpServer(token: string): McpServer {
       item: ExperienceItemSchema,
     },
     async ({ item }) => {
-      const current = await readSessionResume(token);
+      const current = requireSession();
       const exists = current.experience.some((e) => e.id === item.id);
       const nextExperience = exists
         ? current.experience.map((e) => (e.id === item.id ? item : e))
         : [item, ...current.experience];
       const next = { ...current, experience: nextExperience };
-      await writeSessionResume(token, next, "mcp");
+      writeSessionResume(token, next, "mcp");
       return {
         content: [
           { type: "text", text: JSON.stringify(next.experience, null, 2) },
@@ -97,12 +105,12 @@ export function createResumeMcpServer(token: string): McpServer {
       id: z.string(),
     },
     async ({ id }) => {
-      const current = await readSessionResume(token);
+      const current = requireSession();
       const next = {
         ...current,
         experience: current.experience.filter((e) => e.id !== id),
       };
-      await writeSessionResume(token, next, "mcp");
+      writeSessionResume(token, next, "mcp");
       return {
         content: [
           { type: "text", text: JSON.stringify(next.experience, null, 2) },
@@ -118,13 +126,13 @@ export function createResumeMcpServer(token: string): McpServer {
       item: EducationItemSchema,
     },
     async ({ item }) => {
-      const current = await readSessionResume(token);
+      const current = requireSession();
       const exists = current.education.some((e) => e.id === item.id);
       const nextEducation = exists
         ? current.education.map((e) => (e.id === item.id ? item : e))
         : [item, ...current.education];
       const next = { ...current, education: nextEducation };
-      await writeSessionResume(token, next, "mcp");
+      writeSessionResume(token, next, "mcp");
       return {
         content: [
           { type: "text", text: JSON.stringify(next.education, null, 2) },
@@ -140,12 +148,12 @@ export function createResumeMcpServer(token: string): McpServer {
       id: z.string(),
     },
     async ({ id }) => {
-      const current = await readSessionResume(token);
+      const current = requireSession();
       const next = {
         ...current,
         education: current.education.filter((e) => e.id !== id),
       };
-      await writeSessionResume(token, next, "mcp");
+      writeSessionResume(token, next, "mcp");
       return {
         content: [
           { type: "text", text: JSON.stringify(next.education, null, 2) },
@@ -161,7 +169,7 @@ export function createResumeMcpServer(token: string): McpServer {
       skills: z.array(z.string()),
     },
     async ({ skills }) => {
-      const current = await readSessionResume(token);
+      const current = requireSession();
       const existingLower = new Set(
         current.skills.map((s) => s.trim().toLowerCase())
       );
@@ -179,7 +187,7 @@ export function createResumeMcpServer(token: string): McpServer {
       }
 
       const next = { ...current, skills: [...current.skills, ...added] };
-      await writeSessionResume(token, next, "mcp");
+      writeSessionResume(token, next, "mcp");
       return {
         content: [{ type: "text", text: JSON.stringify(next.skills, null, 2) }],
       };
@@ -193,7 +201,7 @@ export function createResumeMcpServer(token: string): McpServer {
       skills: z.array(z.string()),
     },
     async ({ skills }) => {
-      const current = await readSessionResume(token);
+      const current = requireSession();
       const toRemove = new Set(skills.map((s) => s.trim().toLowerCase()));
       const next = {
         ...current,
@@ -201,7 +209,7 @@ export function createResumeMcpServer(token: string): McpServer {
           (s) => !toRemove.has(s.trim().toLowerCase())
         ),
       };
-      await writeSessionResume(token, next, "mcp");
+      writeSessionResume(token, next, "mcp");
       return {
         content: [{ type: "text", text: JSON.stringify(next.skills, null, 2) }],
       };
@@ -210,4 +218,3 @@ export function createResumeMcpServer(token: string): McpServer {
 
   return server;
 }
-

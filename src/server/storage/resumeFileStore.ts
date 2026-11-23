@@ -3,33 +3,50 @@ import path from "node:path";
 import type { ResumeData } from "@/types/resume";
 import { hashMcpToken, isValidMcpToken } from "./tokenUtils";
 
-const DATA_DIR = path.join(process.cwd(), ".data", "resumes");
 const TEMPLATE_PATH = path.join(process.cwd(), "src", "data", "resume.json");
+const SESSION_TTL_MS = 1000 * 60 * 60 * 4; // 4 hours sliding runtime TTL
 
 export type ResumeUpdateSource = "browser" | "mcp";
 
 export interface ResumeUpdateEvent {
   data: ResumeData;
   source: ResumeUpdateSource;
+  version: number;
   updatedAt: string;
+}
+
+interface RuntimeSessionEntry {
+  data: ResumeData;
+  version: number;
+  expiresAt: number;
 }
 
 type ResumeListener = (event: ResumeUpdateEvent) => void;
 
-const globalForBus = globalThis as unknown as {
+const globalForRuntime = globalThis as unknown as {
+  __resumeRuntimeStore?: Map<string, RuntimeSessionEntry>;
   __resumeSubscribers?: Map<string, Set<ResumeListener>>;
 };
 
-const subscribers =
-  globalForBus.__resumeSubscribers ??
-  (globalForBus.__resumeSubscribers = new Map<string, Set<ResumeListener>>());
+const sessionStore =
+  globalForRuntime.__resumeRuntimeStore ??
+  (globalForRuntime.__resumeRuntimeStore = new Map<
+    string,
+    RuntimeSessionEntry
+  >());
 
-function getSessionFilePath(token: string): string {
-  if (!isValidMcpToken(token)) {
-    throw new Error("Invalid MCP session token");
+const subscribers =
+  globalForRuntime.__resumeSubscribers ??
+  (globalForRuntime.__resumeSubscribers = new Map<string, Set<ResumeListener>>());
+
+function pruneExpiredSessions(): void {
+  const now = Date.now();
+  for (const [key, entry] of sessionStore.entries()) {
+    if (entry.expiresAt <= now) {
+      sessionStore.delete(key);
+      subscribers.delete(key);
+    }
   }
-  const hashed = hashMcpToken(token);
-  return path.join(DATA_DIR, `${hashed}.json`);
 }
 
 export async function loadTemplateResume(): Promise<ResumeData> {
@@ -37,47 +54,84 @@ export async function loadTemplateResume(): Promise<ResumeData> {
   return JSON.parse(raw) as ResumeData;
 }
 
-export async function readSessionResume(token: string): Promise<ResumeData> {
-  const filePath = getSessionFilePath(token);
-  try {
-    const raw = await fs.readFile(filePath, "utf-8");
-    return JSON.parse(raw) as ResumeData;
-  } catch {
-    return loadTemplateResume();
-  }
+export function isSessionActive(token: string): boolean {
+  if (!isValidMcpToken(token)) return false;
+  pruneExpiredSessions();
+  const entry = sessionStore.get(hashMcpToken(token));
+  if (!entry) return false;
+  entry.expiresAt = Date.now() + SESSION_TTL_MS;
+  return true;
 }
 
-export async function writeSessionResume(
+export async function activateSession(
+  token: string,
+  initialResume?: ResumeData
+): Promise<void> {
+  if (!isValidMcpToken(token)) {
+    throw new Error("Invalid MCP session token");
+  }
+  pruneExpiredSessions();
+  const key = hashMcpToken(token);
+  const existing = sessionStore.get(key);
+  const data = initialResume ?? existing?.data ?? (await loadTemplateResume());
+  sessionStore.set(key, {
+    data,
+    version: existing ? existing.version + 1 : 1,
+    expiresAt: Date.now() + SESSION_TTL_MS,
+  });
+}
+
+export function readSessionResume(token: string): {
+  data: ResumeData;
+  version: number;
+} | null {
+  if (!isValidMcpToken(token)) return null;
+  pruneExpiredSessions();
+  const entry = sessionStore.get(hashMcpToken(token));
+  if (!entry) return null;
+  entry.expiresAt = Date.now() + SESSION_TTL_MS;
+  return { data: entry.data, version: entry.version };
+}
+
+export function writeSessionResume(
   token: string,
   data: ResumeData,
   source: ResumeUpdateSource
-): Promise<void> {
-  const filePath = getSessionFilePath(token);
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
-
+): number | null {
+  if (!isValidMcpToken(token)) return null;
+  pruneExpiredSessions();
   const key = hashMcpToken(token);
+  const existing = sessionStore.get(key);
+  if (!existing) return null;
+
+  const nextVersion = existing.version + 1;
+  sessionStore.set(key, {
+    data,
+    version: nextVersion,
+    expiresAt: Date.now() + SESSION_TTL_MS,
+  });
+
   const listeners = subscribers.get(key);
   if (listeners) {
     const event: ResumeUpdateEvent = {
       data,
       source,
+      version: nextVersion,
       updatedAt: new Date().toISOString(),
     };
     for (const listener of listeners) {
       listener(event);
     }
   }
+
+  return nextVersion;
 }
 
-export async function deleteSessionResume(token: string): Promise<void> {
+export function revokeSession(token: string): void {
   if (!isValidMcpToken(token)) return;
-  const filePath = getSessionFilePath(token);
-  try {
-    await fs.unlink(filePath);
-  } catch {
-    // Ignore if file does not exist
-  }
+  const key = hashMcpToken(token);
+  sessionStore.delete(key);
+  subscribers.delete(key);
 }
 
 export function subscribeToResumeUpdates(
@@ -101,4 +155,3 @@ export function subscribeToResumeUpdates(
     }
   };
 }
-

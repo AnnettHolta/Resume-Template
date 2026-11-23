@@ -8,6 +8,7 @@ import {
   EyeOff,
   KeyRound,
   RefreshCw,
+  RotateCcw,
   Unplug,
   X,
 } from "lucide-react";
@@ -18,16 +19,20 @@ import styles from "./McpModal.module.scss";
 interface McpModalProps {
   isOpen: boolean;
   token: string | null;
+  isSessionExpired: boolean;
   currentResume: ResumeData;
   onTokenChange: (nextToken: string | null) => void;
+  onSessionRevalidated: () => void;
   onClose: () => void;
 }
 
 export function McpModal({
   isOpen,
   token,
+  isSessionExpired,
   currentResume,
   onTokenChange,
+  onSessionRevalidated,
   onClose,
 }: McpModalProps) {
   const [showToken, setShowToken] = useState(false);
@@ -36,7 +41,6 @@ export function McpModal({
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Always hide token whenever modal opens/closes
   const handleClose = () => {
     setShowToken(false);
     setCopiedType(null);
@@ -60,7 +64,10 @@ export function McpModal({
 
   if (!isOpen) return null;
 
-  const requestOrRegenerateToken = async (regenerate: boolean) => {
+  const callSessionEndpoint = async (options: {
+    regenerate?: boolean;
+    revalidate?: boolean;
+  }) => {
     setIsLoading(true);
     setError(null);
     try {
@@ -68,13 +75,15 @@ export function McpModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          regenerate,
+          regenerate: Boolean(options.regenerate),
+          revalidate: Boolean(options.revalidate),
           initialResume: currentResume,
         }),
       });
       if (!res.ok) throw new Error("Failed to issue MCP token");
       const json = (await res.json()) as { token: string };
       onTokenChange(json.token);
+      onSessionRevalidated();
       setShowToken(false);
     } catch {
       setError("Could not reach MCP session endpoint.");
@@ -149,7 +158,7 @@ export function McpModal({
                   MCP Connection
                 </h2>
                 <p className={styles.subtitle}>
-                  Optional · Isolated per-session token
+                  Optional · Runtime-only in-memory session
                 </p>
               </div>
             </div>
@@ -165,11 +174,40 @@ export function McpModal({
 
           <p className={styles.description}>
             Connect an AI agent (Claude Code, Cursor, Antigravity, Codex) to
-            read and edit only your resume. The token is stored in your session
-            cookie and never embedded in resume JSON.
+            read and edit only your resume. No plaintext resume files are saved
+            to server disk, and tokens are never stored in JSON.
           </p>
 
           {error && <p className={styles.errorText}>{error}</p>}
+
+          {token && isSessionExpired && (
+            <div className={styles.expiredBox}>
+              <p className={styles.expiredText}>
+                Your runtime MCP session expired or the server restarted. Choose
+                whether to revalidate your existing token or issue a new one:
+              </p>
+              <div className={styles.expiredActions}>
+                <button
+                  type="button"
+                  className={styles.secondaryBtn}
+                  onClick={() => callSessionEndpoint({ revalidate: true })}
+                  disabled={isLoading}
+                >
+                  <RotateCcw size={14} />
+                  <span>Revalidate Token</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.primaryInlineBtn}
+                  onClick={() => callSessionEndpoint({ regenerate: true })}
+                  disabled={isLoading}
+                >
+                  <RefreshCw size={14} />
+                  <span>Request New Token</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {token ? (
             <div className={styles.tokenSection}>
@@ -250,7 +288,7 @@ export function McpModal({
               <button
                 type="button"
                 className={styles.primaryBtn}
-                onClick={() => requestOrRegenerateToken(false)}
+                onClick={() => callSessionEndpoint({})}
                 disabled={isLoading}
               >
                 <KeyRound size={14} />
@@ -264,17 +302,16 @@ export function McpModal({
       <GeneralConfirmModal
         isOpen={confirmRegenerate}
         title="Regenerate MCP Token?"
-        description="Your current token will be invalidated immediately, and any connected AI agents will need the new token to continue syncing."
+        description="Your current token will be revoked immediately, and any connected AI agents will need the new token to continue syncing."
         confirmLabel="Regenerate"
         cancelLabel="Keep Current"
         isDestructive
         onCancel={() => setConfirmRegenerate(false)}
         onConfirm={() => {
           setConfirmRegenerate(false);
-          void requestOrRegenerateToken(true);
+          void callSessionEndpoint({ regenerate: true });
         }}
       />
     </>
   );
 }
-

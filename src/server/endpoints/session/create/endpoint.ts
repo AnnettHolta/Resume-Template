@@ -1,13 +1,15 @@
 import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
 import { setCookie } from "hono/cookie";
 import {
-  deleteSessionResume,
+  activateSession,
+  isSessionActive,
   readSessionResume,
-  writeSessionResume,
+  revokeSession,
 } from "@/server/storage/resumeFileStore";
 import {
   extractMcpToken,
   generateMcpToken,
+  isHttpsRequest,
   MCP_TOKEN_COOKIE,
 } from "@/server/storage/tokenUtils";
 import { CreateSessionRequestSchema } from "./request";
@@ -17,7 +19,7 @@ const route = createRoute({
   method: "post",
   path: "/session",
   tags: ["Session"],
-  summary: "Request or regenerate an MCP session token",
+  summary: "Request, revalidate, or regenerate an MCP session token",
   request: {
     body: {
       content: {
@@ -45,38 +47,37 @@ export function registerCreateSessionEndpoint(app: OpenAPIHono) {
     const body = await c.req.json().catch(() => ({}));
     const parsed = CreateSessionRequestSchema.safeParse(body);
     const regenerate = parsed.success ? parsed.data.regenerate : false;
+    const revalidate = parsed.success ? parsed.data.revalidate : false;
     const initialResume = parsed.success ? parsed.data.initialResume : undefined;
 
     const existingToken = extractMcpToken(c.req.raw.headers);
 
     if (existingToken && !regenerate) {
-      if (initialResume) {
-        await writeSessionResume(existingToken, initialResume, "browser");
+      if (isSessionActive(existingToken) || revalidate) {
+        await activateSession(existingToken, initialResume);
+        return c.json({ token: existingToken, active: true }, 200);
       }
-      return c.json({ token: existingToken }, 200);
     }
 
     let seedResume = initialResume;
     if (existingToken && regenerate) {
       if (!seedResume) {
-        seedResume = await readSessionResume(existingToken);
+        seedResume = readSessionResume(existingToken)?.data;
       }
-      await deleteSessionResume(existingToken);
+      revokeSession(existingToken);
     }
 
     const token = generateMcpToken();
-    if (seedResume) {
-      await writeSessionResume(token, seedResume, "browser");
-    }
+    await activateSession(token, seedResume);
 
     setCookie(c, MCP_TOKEN_COOKIE, token, {
       path: "/",
       sameSite: "Lax",
       httpOnly: false,
-      maxAge: 60 * 60 * 24 * 30,
+      secure: isHttpsRequest(c.req.raw),
+      maxAge: 60 * 60 * 4,
     });
 
-    return c.json({ token }, 200);
+    return c.json({ token, active: true }, 200);
   });
 }
-
