@@ -18,12 +18,14 @@ import { ExperienceSection } from "@/components/ExperienceSection/ExperienceSect
 import { EducationSection } from "@/components/EducationSection/EducationSection";
 import { SkillsSection } from "@/components/SkillsSection/SkillsSection";
 import { GeneralConfirmModal } from "@/components/GeneralConfirmModal/GeneralConfirmModal";
-import { McpModal } from "@/components/McpModal/McpModal";
+import { LocalMcpNotice, McpModal } from "@/components/McpModal/McpModal";
 import { ModalController } from "@/components/Modal/ModalController";
 import { PrintModal, type PrintMode } from "@/components/PrintModal/PrintModal";
 import { EditorAccessNotice } from "./EditorAccessNotice";
 import { settleEditorDraft, useEditorAccess } from "./useEditorAccess";
 import styles from "./ResumeEditor.module.scss";
+
+const mcpEnabled = process.env.NEXT_PUBLIC_MCP_ENABLED !== "false";
 
 interface ResumeEditorProps {
   initialData: ResumeData;
@@ -62,7 +64,7 @@ function ResumeEditorContent({ initialData }: ResumeEditorProps) {
   const { isWriter, isWriterNow } = access;
 
   const { mcpToken, isMcpExpired, isEditorConnected, notifyTokenChange } =
-    useMcpSync(initialData, isWriter, isWriterNow);
+    useMcpSync(initialData, isWriter && mcpEnabled, isWriterNow);
   const saveStatus = useSyncExternalStore(
     subscribeToSaveStatus,
     getSaveStatus,
@@ -117,6 +119,7 @@ function ResumeEditorContent({ initialData }: ResumeEditorProps) {
     <div className={styles.wrapper}>
       <Toolbar
         canEdit={isWriter}
+        canOpenMcp={!mcpEnabled || isWriter}
         canExport={entries.length > 0}
         canUndo={isWriter && activeIndex > 0}
         canRedo={isWriter && activeIndex < activeEntries.length - 1}
@@ -194,14 +197,21 @@ function ResumeEditorContent({ initialData }: ResumeEditorProps) {
         </footer>
       </main>
 
-      <McpModal
-        isOpen={isWriter && isMcpModalOpen}
-        token={mcpToken}
-        isSessionExpired={isMcpExpired}
-        isEditorConnected={isEditorConnected}
-        onTokenChange={notifyTokenChange}
-        onClose={() => setIsMcpModalOpen(false)}
-      />
+      {mcpEnabled ? (
+        <McpModal
+          isOpen={isWriter && isMcpModalOpen}
+          token={mcpToken}
+          isSessionExpired={isMcpExpired}
+          isEditorConnected={isEditorConnected}
+          onTokenChange={notifyTokenChange}
+          onClose={() => setIsMcpModalOpen(false)}
+        />
+      ) : (
+        <LocalMcpNotice
+          isOpen={isMcpModalOpen}
+          onClose={() => setIsMcpModalOpen(false)}
+        />
+      )}
 
       <PrintModal
         isOpen={isPrintModalOpen}

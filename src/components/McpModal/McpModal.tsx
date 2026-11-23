@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { KeyRound, RefreshCw, X } from "lucide-react";
+import { ArrowUpRight, KeyRound, RefreshCw, X } from "lucide-react";
 import { GeneralConfirmModal } from "@/components/GeneralConfirmModal/GeneralConfirmModal";
 import { Modal } from "@/components/Modal/Modal";
 import { McpTokenPanel } from "./McpTokenPanel";
@@ -14,6 +14,60 @@ interface McpModalProps {
   isEditorConnected: boolean;
   onTokenChange: (nextToken: string | null) => void;
   onClose: () => void;
+}
+
+export function LocalMcpNotice({
+  isOpen,
+  onClose,
+}: Pick<McpModalProps, "isOpen" | "onClose">) {
+  const titleId = useId();
+  const descriptionId = useId();
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      titleId={titleId}
+      descriptionId={descriptionId}
+      className={styles.dialog}
+      onClose={onClose}
+    >
+      <div className={styles.header}>
+        <div className={styles.titleRow}>
+          <span className={styles.iconBadge} aria-hidden="true">
+            <KeyRound size={16} />
+          </span>
+          <h2
+            id={titleId}
+            className={styles.title}
+            tabIndex={-1}
+            data-dialog-focus
+          >
+            MCP is only available locally
+          </h2>
+        </div>
+        <button
+          type="button"
+          className={styles.closeBtn}
+          onClick={onClose}
+          aria-label="Close MCP modal"
+        >
+          <X size={16} />
+        </button>
+      </div>
+      <p id={descriptionId} className={styles.description}>
+        Run the app locally to connect an MCP client.
+      </p>
+      <a
+        className={styles.repositoryLink}
+        href="https://github.com/AnnettHolta/Resume-Template"
+        target="_blank"
+        rel="noreferrer"
+      >
+        View on GitHub
+        <ArrowUpRight size={14} aria-hidden="true" />
+      </a>
+    </Modal>
+  );
 }
 
 export function McpModal({

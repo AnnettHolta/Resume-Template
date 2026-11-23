@@ -1,26 +1,13 @@
 import type { ResumeData } from "@/types/resume";
 import { ResumeDataSchema } from "./resumeSchema";
+import { createClientId } from "./clientId";
 
 export const MAX_HISTORY_LENGTH = 50;
 
 export function withResumeId(
   data: ResumeData,
 ): ResumeData & { resumeId: string } {
-  if (data.resumeId) return { ...data, resumeId: data.resumeId };
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0"));
-  const resumeId = [
-    hex.slice(0, 4),
-    hex.slice(4, 6),
-    hex.slice(6, 8),
-    hex.slice(8, 10),
-    hex.slice(10),
-  ]
-    .map((part) => part.join(""))
-    .join("-");
-  return { ...data, resumeId };
+  return { ...data, resumeId: data.resumeId ?? createClientId() };
 }
 
 export function isValidResumeData(value: unknown): value is ResumeData {

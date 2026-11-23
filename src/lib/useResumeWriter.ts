@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createClientId } from "./clientId";
+import { requestResumeWriterLease } from "./resumeWriterLease";
 
 const LOCK_NAME = "resume-template-history-writer";
 const CHANNEL_NAME = "resume-template-history-writer";
@@ -12,10 +14,13 @@ type Phase =
   | "requesting"
   | "handoff"
   | "unsupported"
+  | "lost"
   | "error";
 type Options = {
   beforeAcquire: () => Promise<void>;
   beforeHandoff: () => Promise<boolean>;
+  onHandoffFailed?: () => void;
+  onOwnershipLost?: () => void;
 };
 type Message = {
   type: "request" | "owner" | "refused";
@@ -40,7 +45,11 @@ export function useResumeWriter(options: Options) {
   const continueReadOnly = useCallback(() => operations.current.cancel(), []);
 
   useEffect(() => {
-    if (!navigator.locks || typeof BroadcastChannel === "undefined") {
+    const locks = navigator.locks;
+    if (
+      typeof BroadcastChannel === "undefined" ||
+      (!locks && typeof indexedDB === "undefined")
+    ) {
       let active = true;
       queueMicrotask(() => {
         if (active) setPhase("unsupported");
@@ -49,11 +58,12 @@ export function useResumeWriter(options: Options) {
         active = false;
       };
     }
-    const tab = crypto.randomUUID();
+    const tab = createClientId();
     const channel = new BroadcastChannel(CHANNEL_NAME);
     let active = true;
     let pending: AbortController | undefined;
     let release: (() => void) | undefined;
+    let rememberOnDeparture: (() => void) | undefined;
     let handingOff = false;
     const requesters = new Set<string>();
     const update = (next: Phase) => {
@@ -62,10 +72,12 @@ export function useResumeWriter(options: Options) {
     const send = (message: Message) => channel.postMessage(message);
 
     const handoff = async (target?: string) => {
+      if (!writer.current && !handingOff) return;
       if (target) requesters.add(target);
-      if (!writer.current || handingOff) return;
+      if (handingOff) return;
       handingOff = true;
       writer.current = false;
+      const relinquish = release;
       update("handoff");
       let saved = false;
       try {
@@ -73,11 +85,17 @@ export function useResumeWriter(options: Options) {
       } catch {
         /* Retain ownership on save failure. */
       }
+      if (release !== relinquish || !relinquish) {
+        requesters.clear();
+        handingOff = false;
+        return;
+      }
       if (saved || !active) {
-        release?.();
+        relinquish();
         update("read-only");
       } else {
         writer.current = true;
+        callbacks.current.onHandoffFailed?.();
         update("writer");
         if (active) {
           for (const requester of requesters)
@@ -90,42 +108,67 @@ export function useResumeWriter(options: Options) {
     const acquire = (wait: boolean) => {
       const controller = new AbortController();
       pending = controller;
-      navigator.locks
-        .request(
-          LOCK_NAME,
-          wait ? { signal: controller.signal } : { ifAvailable: true },
-          async (lock) => {
-            if (!lock) {
-              if (pending === controller) pending = undefined;
-              update("read-only");
-              return;
-            }
-            if (!active || controller.signal.aborted) return;
-            try {
-              await callbacks.current.beforeAcquire();
-            } catch {
-              if (pending === controller) pending = undefined;
-              update("error");
-              return;
-            }
-            if (!active || controller.signal.aborted) return;
-            if (pending === controller) pending = undefined;
-            await new Promise<void>((resolve) => {
-              release = resolve;
-              writer.current = true;
-              update("writer");
-              send({ type: "owner", tab });
-            });
-            release = undefined;
-          },
-        )
-        .catch((error: unknown) => {
-          if (
-            active &&
-            !(error instanceof DOMException && error.name === "AbortError")
-          )
-            update("error");
+      const onGrant = async (
+        granted: boolean,
+        lost?: AbortSignal,
+        remember?: () => void,
+      ) => {
+        if (!granted) {
+          if (pending === controller) pending = undefined;
+          update("read-only");
+          return;
+        }
+        if (!active || controller.signal.aborted) return;
+        try {
+          await callbacks.current.beforeAcquire();
+        } catch {
+          if (pending === controller) pending = undefined;
+          update("error");
+          return;
+        }
+        if (!active || controller.signal.aborted) return;
+        if (pending === controller) pending = undefined;
+        if (lost?.aborted) {
+          callbacks.current.onOwnershipLost?.();
+          update("lost");
+          return;
+        }
+        const end = new Promise<void>((resolve) => {
+          release = resolve;
         });
+        rememberOnDeparture = remember;
+        const onLoss = () => {
+          const relinquish = release;
+          release = undefined;
+          writer.current = false;
+          callbacks.current.onOwnershipLost?.();
+          update("lost");
+          relinquish?.();
+        };
+        lost?.addEventListener("abort", onLoss, { once: true });
+        writer.current = true;
+        update("writer");
+        send({ type: "owner", tab });
+        await end;
+        lost?.removeEventListener("abort", onLoss);
+        rememberOnDeparture = undefined;
+        release = undefined;
+      };
+      const request = locks
+        ? locks.request(
+            LOCK_NAME,
+            wait ? { signal: controller.signal } : { ifAvailable: true },
+            (lock) => onGrant(Boolean(lock)),
+          )
+        : requestResumeWriterLease(wait, controller.signal, onGrant);
+      void request.catch((error: unknown) => {
+        if (pending === controller) pending = undefined;
+        if (
+          active &&
+          !(error instanceof DOMException && error.name === "AbortError")
+        )
+          update("error");
+      });
     };
     channel.onmessage = ({ data }: MessageEvent<Message>) => {
       if (!active || !data || data.tab === tab) return;
@@ -150,7 +193,8 @@ export function useResumeWriter(options: Options) {
         update("read-only");
       },
     };
-    const onPageHide = () => {
+    const onPageHide = (event: PageTransitionEvent) => {
+      if (!event.persisted) rememberOnDeparture?.();
       void handoff();
     };
     window.addEventListener("pagehide", onPageHide);

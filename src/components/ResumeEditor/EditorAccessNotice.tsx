@@ -25,7 +25,9 @@ export function EditorAccessNotice({
     "read-only": "Another tab is editing this resume.",
     requesting: "Waiting for the other tab to save…",
     handoff: "Saving before switching tabs…",
-    unsupported: "Read-only. Open on HTTPS or localhost to edit.",
+    unsupported:
+      "Read-only. This browser doesn’t support coordination between tabs.",
+    lost: "Editing moved to another tab. Save JSON to keep any unsaved changes before editing here again.",
     error: "Couldn’t get editing access.",
   };
   const message = messages[phase];
@@ -43,7 +45,7 @@ export function EditorAccessNotice({
       {message && (
         <div className={`${styles.accessNotice} no-print`}>
           <p role="status">{message}</p>
-          {(phase === "read-only" || phase === "error") && (
+          {(phase === "read-only" || phase === "error" || phase === "lost") && (
             <button type="button" onClick={editHere}>
               Edit here
             </button>

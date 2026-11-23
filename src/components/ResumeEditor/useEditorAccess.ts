@@ -68,13 +68,17 @@ export function useEditorAccess(initialData: ResumeData) {
         useResumeStore.getState().setStatusMessage(null);
         return true;
       }
-      setResumeWriteAllowed(true);
       useResumeStore
         .getState()
         .setStatusMessage(
           "Editing stayed in this tab because a pending change could not be saved.",
         );
       return false;
+    },
+    onHandoffFailed: () => setResumeWriteAllowed(true),
+    onOwnershipLost: () => {
+      settleEditorDraft();
+      setResumeWriteAllowed(false);
     },
   });
 }

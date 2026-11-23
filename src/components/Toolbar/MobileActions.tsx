@@ -6,6 +6,7 @@ import styles from "./Toolbar.module.scss";
 
 interface MobileActionsProps {
   canEdit?: boolean;
+  canOpenMcp?: boolean;
   canExport?: boolean;
   isMcpConnected: boolean;
   onImport: () => void;
@@ -16,6 +17,7 @@ interface MobileActionsProps {
 
 export function MobileActions({
   canEdit = true,
+  canOpenMcp = canEdit,
   canExport = true,
   isMcpConnected,
   onImport,
@@ -59,7 +61,7 @@ export function MobileActions({
       label: "MCP",
       Icon: Cpu,
       run: onOpenMcp,
-      enabled: canEdit,
+      enabled: canOpenMcp,
       className: isMcpConnected ? styles.mobileConnected : undefined,
     },
     {

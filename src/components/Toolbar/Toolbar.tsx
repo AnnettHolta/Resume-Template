@@ -16,6 +16,7 @@ import styles from "./Toolbar.module.scss";
 
 interface ToolbarProps {
   canEdit: boolean;
+  canOpenMcp: boolean;
   canExport: boolean;
   canUndo: boolean;
   canRedo: boolean;
@@ -33,6 +34,7 @@ interface ToolbarProps {
 
 export function Toolbar({
   canEdit,
+  canOpenMcp,
   canExport,
   canUndo,
   canRedo,
@@ -140,11 +142,9 @@ export function Toolbar({
               event.currentTarget.focus();
               onOpenMcp();
             }}
-            data-tooltip={
-              isMcpConnected ? "MCP connected" : "Configure optional MCP"
-            }
+            data-tooltip={isMcpConnected ? "MCP connected" : "MCP options"}
             data-tooltip-position="bot"
-            disabled={!canEdit}
+            disabled={!canOpenMcp}
           >
             <Cpu size={14} className={styles.mutedIcon} />
             <span>MCP</span>
@@ -182,6 +182,7 @@ export function Toolbar({
           </button>
           <MobileActions
             canEdit={canEdit}
+            canOpenMcp={canOpenMcp}
             canExport={canExport}
             isMcpConnected={isMcpConnected}
             onImport={() => fileInputRef.current?.click()}

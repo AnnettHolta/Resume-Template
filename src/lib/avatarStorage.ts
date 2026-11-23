@@ -1,4 +1,6 @@
 import { del, get, set, update } from "idb-keyval";
+import { createClientId } from "./clientId";
+import { getEditorWriteStore } from "./resumeWriterLease";
 
 export const AVATAR_BLOB_KEY = "resume-template-avatar-v1";
 export const AVATAR_SIZE_PX = 512;
@@ -128,14 +130,14 @@ export async function getAvatarBlob(): Promise<Blob | null> {
 
 export async function saveAvatarBlob(blob: Blob): Promise<void> {
   if (typeof window === "undefined") return;
-  await set(AVATAR_BLOB_KEY, blob);
+  await set(AVATAR_BLOB_KEY, blob, getEditorWriteStore());
   notifyAvatarChanged();
 }
 
 export async function deleteAvatarBlob(): Promise<void> {
   if (typeof window === "undefined") return;
   try {
-    await del(AVATAR_BLOB_KEY);
+    await del(AVATAR_BLOB_KEY, getEditorWriteStore());
   } catch {
     // Ignore IndexedDB deletion errors
   }
@@ -182,28 +184,35 @@ export async function changeAvatarGallery(
 ): Promise<void> {
   if (!canEdit()) throw new Error("Editing is no longer available.");
   await trackWrite(
-    update<AvatarGallery>(galleryKey(resumeId), (current) => {
-      return change(current ?? emptyGallery());
-    }),
+    update<AvatarGallery>(
+      galleryKey(resumeId),
+      (current) => change(current ?? emptyGallery()),
+      getEditorWriteStore(),
+    ),
   );
   notifyAvatarChanged();
 }
 
 export async function clearAvatarGallery(resumeId: string): Promise<void> {
-  await trackWrite(del(galleryKey(resumeId)));
+  await trackWrite(del(galleryKey(resumeId), getEditorWriteStore()));
   notifyAvatarChanged();
 }
 
 /** Call only when adopting the existing local resume, never when importing. */
 export async function migrateLegacyAvatar(resumeId: string): Promise<void> {
+  const store = getEditorWriteStore();
   const blob = await get<Blob>(AVATAR_BLOB_KEY);
   if (!(blob instanceof Blob)) return;
-  await update<AvatarGallery>(galleryKey(resumeId), (current) => {
-    if (current) return current;
-    const id = crypto.randomUUID();
-    return { photos: [{ id, blob }], selectedId: id };
-  });
-  await del(AVATAR_BLOB_KEY);
+  await update<AvatarGallery>(
+    galleryKey(resumeId),
+    (current) => {
+      if (current) return current;
+      const id = createClientId();
+      return { photos: [{ id, blob }], selectedId: id };
+    },
+    store,
+  );
+  await del(AVATAR_BLOB_KEY, store);
   notifyAvatarChanged();
 }
 

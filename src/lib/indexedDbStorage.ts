@@ -1,11 +1,16 @@
 ﻿import { del, get, set } from "idb-keyval";
 import { debounce } from "lodash-es";
 import type { StateStorage } from "zustand/middleware";
+import { getEditorWriteStore } from "./resumeWriterLease";
 
 export const HISTORY_PERSIST_DEBOUNCE_MS = 1000;
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
-type HistoryWrite = { name: string; value: string };
+type HistoryWrite = {
+  name: string;
+  value: string;
+  store: ReturnType<typeof getEditorWriteStore>;
+};
 
 let latest: HistoryWrite | undefined;
 let scheduled: HistoryWrite | undefined;
@@ -35,7 +40,8 @@ function enqueueWrite() {
   writes = writes.then(async () => {
     if (latest !== write) return;
     try {
-      await set(write.name, write.value);
+      if (write.store) await set(write.name, write.value, write.store);
+      else await set(write.name, write.value);
       if (latest === write) setStatus("saved");
     } catch {
       if (latest === write) setStatus("error");
@@ -86,16 +92,17 @@ export const debouncedIndexedDbStorage: StateStorage = {
       (latest?.name === name && latest.value === value)
     )
       return;
-    latest = { name, value };
+    latest = { name, value, store: getEditorWriteStore() };
     setStatus("saving");
     debouncedWrite();
   },
   removeItem: async (name: string): Promise<void> => {
     if (typeof window === "undefined") return;
+    const store = getEditorWriteStore();
     cancelIndexedDbWrites();
     writes = writes.then(async () => {
       try {
-        await del(name);
+        await del(name, store);
       } catch {
         if (!latest) setStatus("error");
       }

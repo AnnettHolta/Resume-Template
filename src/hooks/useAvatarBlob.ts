@@ -14,6 +14,7 @@ import {
   getAvatarGallery,
   type AvatarGallery,
 } from "@/lib/avatarStorage";
+import { createClientId } from "@/lib/clientId";
 
 export function useAvatarBlob(
   resumeId?: string,
@@ -104,7 +105,7 @@ export function useAvatarBlob(
       try {
         const blob = await compressImageToWebpBlob(file);
         if (!allowed(id)) return;
-        const photoId = crypto.randomUUID();
+        const photoId = createClientId();
         await changeAvatarGallery(
           id,
           (current) => ({

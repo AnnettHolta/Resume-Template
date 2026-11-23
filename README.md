@@ -2,6 +2,8 @@
 
 A minimalist, client-first **Resume Template & Editor** built with Next.js 16. Edit your resume inline, store a 512×512 WebP profile photo in IndexedDB, export/import JSON, print plain or visual PDFs, and optionally connect an AI assistant over **MCP (Model Context Protocol)** with zero server-side disk persistence.
 
+![Resume editor preview](assets/web-preview.webp)
+
 ---
 
 ## Features & How to Use
@@ -18,7 +20,7 @@ A minimalist, client-first **Resume Template & Editor** built with Next.js 16. E
 - Edits are managed in **Zustand** with a **50-step Undo / Redo** stack.
 - Manual and MCP edits share the same history and **IndexedDB** save queue. Writes use a **1-second debounce** and are flushed when the page goes into the background. The editor reports when a write succeeds and offers retry and JSON download if it fails.
 - **Import / Save / Reset:** **Save** exports a JSON file with a stable `resumeId`. Importing older files without an ID creates a new one. Reimporting a file with the same ID in the same browser opens its saved photos. Photos stay in this browser’s IndexedDB, so upload them again on another device. **Reset** restores the starter template and clears this resume’s local history and photos. On narrow screens, look in **More actions** for Import, Save, MCP, and Reset.
-- **Multiple tabs:** One tab can edit and handle MCP commands. Other tabs open read-only and can request editing access. The active tab saves before handing over, and the requesting tab reloads the saved resume before it can write. Editing requires browser support for Web Locks and BroadcastChannel in a secure context, such as HTTPS or localhost.
+- **Multiple tabs:** One tab can edit and handle MCP commands. Other tabs open read-only and can request editing access. The active tab saves before handing over, and the requesting tab reloads the saved resume before it can write. The browser uses Web Locks when available and an IndexedDB lease on plain HTTP LAN addresses.
 
 ### 3. Print / PDF Export
 
@@ -96,11 +98,26 @@ Open [http://localhost:3000](http://localhost:3000).
 
 - `npm run dev` — Start the Next.js development server.
 - `npm run build` — Create a standalone production build.
+- `npm run build:static` — Export a static site to `out/` with local resume editing, photo storage, JSON import and export, and printing.
 - `npm run start` — Start the production server.
 - `npm run check` — Run `format:check`, `lint`, `test`, and `build` (also enforced by Husky `pre-commit`).
 - `npm run lint` — Run ESLint and the `<250` code-lines check (`scripts/check-file-lines.mjs`).
 - `npm run test` — Run Vitest test suites.
 - `npm run format` — Format all files with Prettier.
+
+### GitHub Pages
+
+The static build includes a notice that MCP is only available locally. Resume edits and photos are stored by the browser. To move a resume from localhost to the published site, export and import its JSON, then upload the photo again.
+
+Run `npm run build:static` for a site hosted at the domain root. For a project site, supply its repository path with `--base-path`.
+
+```bash
+npm run build:static -- --base-path /ResumeTemplate
+```
+
+Upload the contents of `out/` to the static host. To use the included workflow, select **GitHub Actions** as the source under **Settings → Pages**, then run **Publish to GitHub Pages** from the **Actions** tab. The workflow reads the configured base path automatically.
+
+If you switch back to the local production server after a static export, run `npm run build` before `npm run start`.
 
 ### Docker
 

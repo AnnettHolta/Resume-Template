@@ -2,6 +2,7 @@
 .git
 .husky
 .next
+out
 node_modules
 npm-debug.log*
 .env*
