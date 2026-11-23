@@ -62,6 +62,8 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
   const [newSkill, setNewSkill] = useState("");
   const [isFocused, setIsFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [animatedSkills, setAnimatedSkills] = useState<Set<string>>(
     () => new Set()
   );
@@ -119,6 +121,15 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
     onChange(skills.filter((s) => s !== skillToRemove));
   };
 
+  const handleReorderSkill = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const next = [...skills];
+    const [moved] = next.splice(fromIndex, 1);
+    if (moved === undefined) return;
+    next.splice(toIndex, 0, moved);
+    onChange(next);
+  };
+
   return (
     <section
       className={`${styles.section} ${skills.length === 0 ? "no-print" : ""}`}
@@ -129,17 +140,47 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
       </h2>
 
       <ul className={styles.skillList}>
-        {skills.map((skill) => {
+        {skills.map((skill, idx) => {
           const catalogItem = findSkillCatalogItem(skill);
           const lowercaseSkill = skill.toLowerCase();
           const shouldAnimate = animatedSkills.has(skill);
+          const isDragging = draggedIndex === idx;
+          const isDropTarget =
+            dragOverIndex === idx && draggedIndex !== null && draggedIndex !== idx;
           return (
             <li
               key={skill}
+              draggable
               aria-label={lowercaseSkill}
               data-skill={lowercaseSkill}
+              onDragStart={(e) => {
+                setDraggedIndex(idx);
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", skill);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                if (dragOverIndex !== idx) {
+                  setDragOverIndex(idx);
+                }
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (draggedIndex !== null) {
+                  handleReorderSkill(draggedIndex, idx);
+                }
+                setDraggedIndex(null);
+                setDragOverIndex(null);
+              }}
+              onDragEnd={() => {
+                setDraggedIndex(null);
+                setDragOverIndex(null);
+              }}
               className={`${styles.skillTag} ${
                 shouldAnimate ? styles.skillTagEnter : ""
+              } ${isDragging ? styles.skillTagDragging : ""} ${
+                isDropTarget ? styles.skillTagDropTarget : ""
               }`}
             >
               {catalogItem && (

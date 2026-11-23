@@ -49,10 +49,17 @@
   color: $color-text-primary;
   background: $color-bg-subtle;
   white-space: nowrap;
-  transition: border-color 0.15s ease;
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.15s ease, opacity 0.15s ease, transform 0.15s ease,
+    background-color 0.15s ease;
 
   &:hover {
     border-color: $color-border-default;
+  }
+
+  &:active {
+    cursor: grabbing;
   }
 
   @media print {
@@ -60,7 +67,18 @@
     border-color: #d4d4d4;
     padding: 0.15rem 0.5rem;
     color: #000000;
+    cursor: default;
   }
+}
+
+.skillTagDragging {
+  opacity: 0.45;
+  transform: scale(0.96);
+}
+
+.skillTagDropTarget {
+  border-color: $color-accent-blue;
+  background: $color-accent-blue-soft;
 }
 
 .skillTagEnter {
