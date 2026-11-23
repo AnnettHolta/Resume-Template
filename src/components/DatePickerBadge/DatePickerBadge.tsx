@@ -36,7 +36,12 @@ export function DatePickerBadge({
 
   return (
     <span className={styles.wrapper}>
-      <label className={styles.label} onClick={openPicker} title="Change date">
+      <label
+        className={styles.label}
+        onClick={openPicker}
+        data-tooltip="Change date"
+        data-tooltip-position="top"
+      >
         <time className={styles.display}>{value || "Select date"}</time>
         <input
           ref={inputRef}
@@ -56,7 +61,8 @@ export function DatePickerBadge({
           type="button"
           className={`${styles.presentBtn} no-print`}
           onClick={() => onChange("Present")}
-          title="Set end date to Present"
+          data-tooltip="Set end date to Present"
+          data-tooltip-position="top"
         >
           Present
         </button>

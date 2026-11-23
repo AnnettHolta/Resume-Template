@@ -49,7 +49,8 @@ export function Toolbar({
               className={styles.segBtn}
               onClick={onUndo}
               disabled={!canUndo}
-              title="Undo"
+              data-tooltip="Undo last change"
+              data-tooltip-position="bot"
               aria-label="Undo"
             >
               <Undo2 size={14} />
@@ -60,14 +61,19 @@ export function Toolbar({
               className={styles.segBtn}
               onClick={onRedo}
               disabled={!canRedo}
-              title="Redo"
+              data-tooltip="Redo change"
+              data-tooltip-position="bot"
               aria-label="Redo"
             >
               <Redo2 size={14} />
               <span>Redo</span>
             </button>
           </div>
-          <span className={styles.historyBadge} title="Saved history snapshots">
+          <span
+            className={styles.historyBadge}
+            data-tooltip="Saved history snapshots"
+            data-tooltip-position="bot"
+          >
             History {historyPosition}/{historyTotal}{" "}
             <span className={styles.historyMax}>(max {MAX_HISTORY_LENGTH})</span>
           </span>
@@ -91,7 +97,8 @@ export function Toolbar({
             type="button"
             className={`${styles.pillBtn} ${styles.hideOnMobile}`}
             onClick={() => fileInputRef.current?.click()}
-            title="Import JSON"
+            data-tooltip="Import JSON"
+            data-tooltip-position="bot"
           >
             <Upload size={14} className={styles.mutedIcon} />
             <span>Import JSON</span>
@@ -100,7 +107,8 @@ export function Toolbar({
             type="button"
             className={`${styles.pillBtn} ${styles.hideOnMobile}`}
             onClick={onDownloadJson}
-            title="Download JSON"
+            data-tooltip="Download JSON"
+            data-tooltip-position="bot"
           >
             <Download size={14} className={styles.mutedIcon} />
             <span>Download JSON</span>
@@ -109,7 +117,8 @@ export function Toolbar({
             type="button"
             className={`${styles.pillBtn} ${styles.resetBtn}`}
             onClick={onReset}
-            title="Reset to initial server JSON"
+            data-tooltip="Reset to initial JSON"
+            data-tooltip-position="bot"
           >
             <RotateCcw size={14} />
             <span>Reset</span>
@@ -118,7 +127,8 @@ export function Toolbar({
             type="button"
             className={styles.primaryBtn}
             onClick={onPrint}
-            title="Print or Save as PDF"
+            data-tooltip="Print or Save as PDF"
+            data-tooltip-position="bot"
           >
             <Printer size={14} />
             <span>Print / PDF</span>

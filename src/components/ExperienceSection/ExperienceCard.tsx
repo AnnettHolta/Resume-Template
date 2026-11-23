@@ -92,7 +92,8 @@ export function ExperienceCard({
           type="button"
           className={styles.logoBox}
           onClick={() => setShowImageInput((prev) => !prev)}
-          title="Click to set company logo URL"
+          data-tooltip="Set company logo URL"
+          data-tooltip-position="top"
           aria-label="Edit company logo URL"
         >
           {showImage ? (
@@ -244,7 +245,8 @@ export function ExperienceCard({
               className={styles.iconBtn}
               onClick={() => onDelete(item.id)}
               aria-label="Delete experience"
-              title="Delete experience"
+              data-tooltip="Delete experience"
+              data-tooltip-position="left"
             >
               <Trash2 size={15} />
             </button>
@@ -300,7 +302,8 @@ export function ExperienceCard({
                 className={`${styles.removeBulletBtn} no-print`}
                 onClick={() => removeBulletAt(idx)}
                 aria-label="Remove bullet"
-                title="Remove point"
+                data-tooltip="Remove point"
+                data-tooltip-position="left"
               >
                 <X size={13} />
               </button>

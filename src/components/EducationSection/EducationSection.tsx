@@ -109,7 +109,8 @@ function EducationCard({ item, onCommit, onDelete }: EducationCardProps) {
           className={styles.iconBtn}
           onClick={() => onDelete(item.id)}
           aria-label="Delete education"
-          title="Delete education"
+          data-tooltip="Delete education"
+          data-tooltip-position="left"
         >
           <Trash2 size={15} />
         </button>
