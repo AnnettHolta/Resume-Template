@@ -16,7 +16,7 @@ A minimalist, client-first **Resume Template & Editor** built with Next.js 16. E
 ### 2. Local Persistence & History
 
 - Edits are managed in **Zustand** with a **50-step Undo / Redo** stack.
-- History is automatically saved to **IndexedDB** (`idb-keyval`) with a **1-second debounce** and flushed on `pagehide` / `visibilitychange`.
+- Manual and MCP edits share the same history and **IndexedDB** save queue. Writes use a **1-second debounce** and are flushed when the page goes into the background. The editor reports when a write succeeds and offers retry and JSON download if it fails.
 - **Import / Save / Reset:** Use the toolbar to **Import** a resume `.json` file, with field-level feedback for invalid data. **Save** exports the current resume as JSON. **Reset** (with confirmation) to restore the starter template and clear local IndexedDB + avatar storage.
 
 ### 3. Print / PDF Export
@@ -51,11 +51,11 @@ You can let an MCP-compatible AI client read and update your resume live in the 
    POST http://localhost:3000/api/mcp
    Authorization: Bearer <your-session-token>
    ```
-3. **SSE** (`/api/resume/events`) tells the editor when the session changes. If both copies have edits, the editor preserves your draft and lets you sync it, use the session version, or download the session copy.
+3. Keep the editor tab open. The browser owns the resume, and the server relays read and edit commands to one connected tab. The agent should call `get_resume` first and include its returned `revision` with edits.
 
 ### Security & Privacy
 
-- Sessions are stored **in server RAM only** with a **4-hour sliding TTL** and zero disk persistence.
+- The server keeps session and command relay state in RAM with a **4-hour inactivity timeout**. Only the editor's browser credential can connect the command stream and acknowledge commands.
 - The token is never written to `resume.json` or IndexedDB.
 - You can disconnect/revoke the session at any time from the MCP modal.
 
@@ -67,11 +67,14 @@ You can let an MCP-compatible AI client read and update your resume live in the 
 - `upsert_education` / `delete_education` — Add, update, or delete education entries by `id`.
 - `add_skills` / `remove_skills` — Add skills (auto-resolving catalog aliases) or remove skills by name.
 
+Edits preserve unrelated browser changes. When a targeted field changed after the supplied revision, the editor rejects the whole request and returns the conflicting fields. An `applied` response means the editor accepted the change. Read `saveStatus` to see whether IndexedDB has confirmed it. A disconnected editor cannot accept edits.
+
 ### API Endpoints
 
 - `POST /api/session` / `DELETE /api/session` — Create or disconnect an MCP session.
-- `GET /api/resume` / `PUT /api/resume` — Read or sync session resume JSON. GET returns an ETag. PUT requires that ETag in `If-Match` and returns a new ETag on success. A stale ETag returns 412 without writing.
-- `GET /api/resume/events` — Server-Sent Events stream for live MCP updates.
+- `GET /api/resume` ? Read the live editor resume and its revision in the ETag. Returns 503 when the editor is unavailable.
+- `GET /api/resume/events` ? Connect the browser to the command stream.
+- `POST /api/resume/commands/{id}/result` ? Acknowledge a command from the connected editor.
 - `POST /api/mcp` — Streamable HTTP MCP endpoint.
 - `GET /api/openapi.json` & `GET /api/docs` — OpenAPI 3.1 spec and Scalar API reference.
 

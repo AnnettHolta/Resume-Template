@@ -1,8 +1,8 @@
 import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
 import {
   isSessionActive,
-  readSessionResume,
-} from "@/server/storage/resumeFileStore";
+  requestEditor,
+} from "@/server/storage/editorSessions";
 import { extractMcpToken } from "@/server/storage/tokenUtils";
 import {
   GetResumeResponseSchema,
@@ -13,7 +13,7 @@ const route = createRoute({
   method: "get",
   path: "/resume",
   tags: ["Resume"],
-  summary: "Get the resume for the active MCP session token",
+  summary: "Read the current resume from the connected editor",
   responses: {
     200: {
       description: "Resume data",
@@ -32,6 +32,10 @@ const route = createRoute({
         },
       },
     },
+    503: {
+      description: "The editor is disconnected or did not respond",
+      content: { "application/json": { schema: UnauthorizedResponseSchema } },
+    },
   },
 });
 
@@ -45,16 +49,20 @@ export function registerGetResumeEndpoint(app: OpenAPIHono) {
       );
     }
 
-    const session = readSessionResume(token);
-    if (!session) {
+    const result = await requestEditor(
+      token,
+      { type: "read" },
+      c.req.raw.signal,
+    );
+    if (!result || result.status !== "read") {
       return c.json(
-        { error: "Missing, expired, or revoked MCP session token" },
-        401,
+        { error: "The editor is disconnected or did not respond" },
+        503,
       );
     }
 
-    return c.json(session.data, 200, {
-      ETag: session.revision,
+    return c.json(result.resume, 200, {
+      ETag: `"${result.revision}"`,
       "Cache-Control": "no-store",
     });
   });

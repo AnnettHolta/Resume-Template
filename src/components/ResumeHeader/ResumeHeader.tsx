@@ -24,6 +24,12 @@ interface ResumeHeaderProps {
 export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState<ResumeProfile>(profile);
+  const [previousProfile, setPreviousProfile] = useState(profile);
+
+  if (profile !== previousProfile) {
+    setPreviousProfile(profile);
+    setDraft(profile);
+  }
 
   const toggleEdit = () => {
     if (isEditing) {
@@ -36,7 +42,7 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
   };
 
   return (
-    <header className={styles.wrapper}>
+    <header className={styles.wrapper} data-resume-profile>
       <div className={styles.profileHeader}>
         <div className={styles.topRow}>
           <div className={styles.identityRow}>

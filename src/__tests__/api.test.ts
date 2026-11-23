@@ -1,120 +1,174 @@
-// @vitest-environment node
+﻿// @vitest-environment node
 import { describe, expect, it } from "vitest";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import initialResume from "@/data/resume.json";
+import { createEditorCommands } from "@/lib/editorCommands";
+import {
+  ResumeCommandEventSchema,
+  ResumeCommandResultSchema,
+} from "@/lib/resumeCommands";
 import { apiApp } from "@/server/app";
+import type { ResumeData } from "@/types/resume";
 
-describe("Hono REPR API & MCP session security", () => {
-  it("requires a current revision for writes and keeps the winning document", async () => {
-    const session = await apiApp.request("/api/session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ initialResume }),
-    });
-    const { token } = (await session.json()) as { token: string };
-    const headers = { Authorization: `Bearer ${token}` };
-    const first = await apiApp.request("/api/resume", { headers });
-    const revision = first.headers.get("ETag");
-    expect(revision).toBeTruthy();
-
-    const write = (headline: string, expected?: string) =>
-      apiApp.request("/api/resume", {
-        method: "PUT",
-        headers: {
-          ...headers,
-          "Content-Type": "application/json",
-          ...(expected ? { "If-Match": expected } : {}),
-        },
-        body: JSON.stringify({
-          ...initialResume,
-          profile: { ...initialResume.profile, headline },
-        }),
-      });
-
-    expect((await write("Unconditional edit")).status).toBe(428);
-    const winningWrite = await write("Winning edit", revision!);
-    expect(winningWrite.status).toBe(200);
-    expect(winningWrite.headers.get("ETag")).not.toBe(revision);
-    expect((await write("Stale edit", revision!)).status).toBe(412);
-
-    const latest = await apiApp.request("/api/resume", { headers });
-    expect(latest.headers.get("ETag")).toBe(winningWrite.headers.get("ETag"));
-    await expect(latest.json()).resolves.toMatchObject({
-      profile: { headline: "Winning edit" },
-    });
-    await apiApp.request("/api/session", { method: "DELETE", headers });
+async function createSession(init?: RequestInit) {
+  const response = await apiApp.request("/api/session", {
+    method: "POST",
+    ...init,
   });
+  expect(response.status).toBe(200);
+  const { token } = (await response.json()) as { token: string };
+  return {
+    token,
+    auth: { Authorization: `Bearer ${token}` },
+    browser: {
+      Cookie: response.headers
+        .getSetCookie()
+        .map((line) => line.split(";")[0])
+        .join("; "),
+    },
+  };
+}
 
-  it("exposes OpenAPI spec and Scalar API docs", async () => {
-    const specRes = await apiApp.request("/api/openapi.json");
-    expect(specRes.status).toBe(200);
-    const spec = (await specRes.json()) as { openapi: string; paths: object };
-    expect(spec.openapi).toBe("3.1.0");
+describe("editor session and MCP API", () => {
+  it("exposes OpenAPI and Scalar docs for editor commands", async () => {
+    const spec = (await (await apiApp.request("/api/openapi.json")).json()) as {
+      paths: object;
+    };
     expect(spec.paths).toHaveProperty("/api/session");
     expect(spec.paths).toHaveProperty("/api/resume");
-
-    const docsRes = await apiApp.request("/api/docs");
-    expect(docsRes.status).toBe(200);
+    expect(spec.paths).toHaveProperty("/api/resume/commands/{id}/result");
+    expect((await apiApp.request("/api/docs")).status).toBe(200);
   });
 
-  it("issues, revalidates, regenerates, and revokes tokens properly", async () => {
-    // Unauthenticated resume read fails
-    const unauth = await apiApp.request("/api/resume");
-    expect(unauth.status).toBe(401);
+  it("allows only the browser owner to connect or rotate and revokes the old token", async () => {
+    expect((await apiApp.request("/api/resume")).status).toBe(401);
+    const session = await createSession();
+    expect(
+      (await apiApp.request("/api/resume", { headers: session.auth })).status,
+    ).toBe(503);
+    expect(
+      (await apiApp.request("/api/resume/events", { headers: session.auth }))
+        .status,
+    ).toBe(401);
+    expect(
+      (
+        await apiApp.request("/api/session", {
+          method: "POST",
+          headers: session.auth,
+        })
+      ).status,
+    ).toBe(403);
 
-    // Request token
-    const createRes = await apiApp.request("/api/session", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ initialResume }),
-    });
-    expect(createRes.status).toBe(200);
-    const { token: token1 } = (await createRes.json()) as { token: string };
-    expect(token1).toBeTruthy();
-
-    // Token is never stored inside resume JSON
-    const getRes = await apiApp.request("/api/resume", {
-      headers: { Authorization: `Bearer ${token1}` },
-    });
-    expect(getRes.status).toBe(200);
-    const resumeText = await getRes.text();
-    expect(resumeText).not.toContain(token1);
-
-    // Query ?token= must NOT be accepted on /api/mcp
-    const queryMcp = await apiApp.request(`/api/mcp?token=${token1}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    expect(queryMcp.status).toBe(401);
-
-    // Regenerate revokes token1 immediately
-    const regenRes = await apiApp.request("/api/session", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token1}`,
-      },
+    const replacement = await createSession({
+      headers: { ...session.browser, "Content-Type": "application/json" },
       body: JSON.stringify({ regenerate: true }),
     });
-    expect(regenRes.status).toBe(200);
-    const { token: token2 } = (await regenRes.json()) as { token: string };
-    expect(token2).not.toBe(token1);
+    expect(replacement.token).not.toBe(session.token);
+    expect(
+      (await apiApp.request("/api/resume", { headers: session.auth })).status,
+    ).toBe(401);
 
-    const oldTokenCheck = await apiApp.request("/api/resume", {
-      headers: { Authorization: `Bearer ${token1}` },
-    });
-    expect(oldTokenCheck.status).toBe(401);
-
-    // Disconnect revokes token2
-    const delRes = await apiApp.request("/api/session", {
+    await apiApp.request("/api/session", {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token2}` },
+      headers: replacement.browser,
     });
-    expect(delRes.status).toBe(200);
+    expect(
+      (await apiApp.request("/api/resume", { headers: replacement.auth }))
+        .status,
+    ).toBe(401);
+  });
 
-    const afterDisconnect = await apiApp.request("/api/resume", {
-      headers: { Authorization: `Bearer ${token2}` },
+  it("relays MCP reads and edits through the editor and rejects commands after disconnect", async () => {
+    const session = await createSession();
+    const stream = await apiApp.request("/api/resume/events", {
+      headers: session.browser,
     });
-    expect(afterDisconnect.status).toBe(401);
+    expect(stream.status).toBe(200);
+    const reader = stream.body!.getReader();
+    const decoder = new TextDecoder();
+    expect(decoder.decode((await reader.read()).value)).toContain(
+      "event: connected",
+    );
+
+    let resume: ResumeData = initialResume;
+    const editor = createEditorCommands({
+      readResume: () => resume,
+      commitResume: (data) => {
+        resume = data;
+      },
+      settleDraft: () => {},
+    });
+    const client = new Client({ name: "resume-test", version: "1" });
+    const transport = new StreamableHTTPClientTransport(
+      new URL("http://localhost/api/mcp"),
+      {
+        requestInit: { headers: session.auth },
+        fetch: async (input, init) => apiApp.request(input, init),
+      },
+    );
+
+    try {
+      await client.connect(transport);
+      const read = client.callTool({ name: "get_resume", arguments: {} });
+      const readEvent = await reader.read();
+      const body = (chunk: Uint8Array | undefined) =>
+        ResumeCommandEventSchema.parse(
+          JSON.parse(decoder.decode(chunk).split("data: ")[1]),
+        );
+      const request = body(readEvent.value);
+      const answer = (id: string, result: unknown, headers: HeadersInit) =>
+        apiApp.request(`/api/resume/commands/${id}/result`, {
+          method: "POST",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify(result),
+        });
+      const snapshot = editor(request);
+      expect((await answer(request.id, snapshot, session.auth)).status).toBe(
+        401,
+      );
+      expect((await answer(request.id, snapshot, session.browser)).status).toBe(
+        204,
+      );
+      expect((await answer(request.id, snapshot, session.browser)).status).toBe(
+        404,
+      );
+      expect((await read).isError).toBeFalsy();
+      if (snapshot.status !== "read") throw new Error("Missing revision");
+
+      const edit = client.callTool({
+        name: "update_profile",
+        arguments: {
+          revision: snapshot.revision,
+          headline: "Agent headline",
+        },
+      });
+      const editRequest = body((await reader.read()).value);
+      expect(resume.profile.headline).toBe(initialResume.profile.headline);
+      const result = ResumeCommandResultSchema.parse(editor(editRequest));
+      expect(
+        (await answer(editRequest.id, result, session.browser)).status,
+      ).toBe(204);
+      expect((await edit).isError).toBeFalsy();
+      expect(resume.profile.headline).toBe("Agent headline");
+
+      await reader.cancel();
+      const offline = await client.callTool({
+        name: "update_profile",
+        arguments: {
+          revision: snapshot.revision,
+          headline: "Offline edit",
+        },
+      });
+      expect(offline.isError).toBe(true);
+      expect(resume.profile.headline).toBe("Agent headline");
+    } finally {
+      await reader.cancel();
+      await client.close();
+      await apiApp.request("/api/session", {
+        method: "DELETE",
+        headers: session.browser,
+      });
+    }
   });
 });

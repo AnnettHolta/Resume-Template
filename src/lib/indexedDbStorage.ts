@@ -1,42 +1,93 @@
-import { del, get, set } from "idb-keyval";
+﻿import { del, get, set } from "idb-keyval";
 import { debounce } from "lodash-es";
 import type { StateStorage } from "zustand/middleware";
 
 export const HISTORY_PERSIST_DEBOUNCE_MS = 1000;
 
-const debouncedSet = debounce((name: string, value: string) => {
-  void set(name, value);
-}, HISTORY_PERSIST_DEBOUNCE_MS);
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+type HistoryWrite = { name: string; value: string };
+
+let latest: HistoryWrite | undefined;
+let scheduled: HistoryWrite | undefined;
+let writes = Promise.resolve();
+let status: SaveStatus = "idle";
+const listeners = new Set<() => void>();
+
+export const getSaveStatus = () => status;
+export const subscribeToSaveStatus = (listener: () => void) => {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+};
+
+function setStatus(next: SaveStatus) {
+  if (status === next) return;
+  status = next;
+  listeners.forEach((listener) => listener());
+}
+
+function enqueueWrite() {
+  const write = latest;
+  if (!write || write === scheduled) return;
+  scheduled = write;
+
+  writes = writes.then(async () => {
+    if (latest !== write) return;
+    try {
+      await set(write.name, write.value);
+      if (latest === write) setStatus("saved");
+    } catch {
+      if (latest === write) setStatus("error");
+    }
+  });
+}
+
+const debouncedWrite = debounce(enqueueWrite, HISTORY_PERSIST_DEBOUNCE_MS);
 
 export function flushIndexedDbWrites(): void {
-  debouncedSet.flush();
+  debouncedWrite.flush();
 }
 
 export function cancelIndexedDbWrites(): void {
-  debouncedSet.cancel();
+  debouncedWrite.cancel();
+  latest = undefined;
+  scheduled = undefined;
+  setStatus("idle");
+}
+
+export function retryIndexedDbWrite(): void {
+  if (status !== "error" || !latest) return;
+  scheduled = undefined;
+  setStatus("saving");
+  enqueueWrite();
 }
 
 export const debouncedIndexedDbStorage: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
     if (typeof window === "undefined") return null;
-    try {
-      const value = await get<string>(name);
-      return value ?? null;
-    } catch {
-      return null;
-    }
+    return (await get<string>(name)) ?? null;
   },
   setItem: (name: string, value: string): void => {
-    if (typeof window === "undefined") return;
-    debouncedSet(name, value);
+    if (
+      typeof window === "undefined" ||
+      (latest?.name === name && latest.value === value)
+    )
+      return;
+    latest = { name, value };
+    setStatus("saving");
+    debouncedWrite();
   },
   removeItem: async (name: string): Promise<void> => {
     if (typeof window === "undefined") return;
-    debouncedSet.cancel();
-    try {
-      await del(name);
-    } catch {
-      // Ignore IndexedDB deletion errors
-    }
+    cancelIndexedDbWrites();
+    writes = writes.then(async () => {
+      try {
+        await del(name);
+      } catch {
+        if (!latest) setStatus("error");
+      }
+    });
+    await writes;
   },
 };

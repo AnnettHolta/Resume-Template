@@ -1,70 +1,98 @@
-import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
+﻿import { createRoute, z, type OpenAPIHono } from "@hono/zod-openapi";
 import { streamSSE } from "hono/streaming";
+import { ResumeCommandResultSchema } from "@/lib/resumeCommands";
 import {
+  completeCommand,
+  connectEditor,
   isSessionActive,
-  subscribeToResumeUpdates,
-} from "@/server/storage/resumeFileStore";
-import { extractMcpToken } from "@/server/storage/tokenUtils";
-import { ResumeEventsUnauthorizedSchema } from "./response";
+  ownsSession,
+} from "@/server/storage/editorSessions";
+import {
+  extractEditorCredential,
+  extractMcpToken,
+} from "@/server/storage/tokenUtils";
 
-const route = createRoute({
+const eventRoute = createRoute({
   method: "get",
   path: "/resume/events",
   tags: ["Resume"],
-  summary: "Subscribe to live resume updates via Server-Sent Events",
+  summary: "Connect the browser editor to MCP commands",
   responses: {
-    200: {
-      description: "SSE stream of resume update events",
-    },
-    401: {
-      description: "Missing, expired, or revoked MCP session token",
-      content: {
-        "application/json": {
-          schema: ResumeEventsUnauthorizedSchema,
-        },
-      },
-    },
+    200: { description: "Server-Sent Events stream of editor commands" },
+    401: { description: "Missing or expired editor credentials" },
   },
 });
 
-export function registerResumeEventsEndpoint(app: OpenAPIHono) {
-  app.openapi(route, async (c) => {
-    const token = extractMcpToken(c.req.raw.headers);
-    if (!token || !isSessionActive(token)) {
-      return c.json(
-        { error: "Missing, expired, or revoked MCP session token" },
-        401,
-      );
-    }
+const resultRoute = createRoute({
+  method: "post",
+  path: "/resume/commands/{id}/result",
+  tags: ["Resume"],
+  summary: "Acknowledge a command from the connected browser editor",
+  request: {
+    params: z.object({ id: z.uuid() }),
+    body: {
+      required: true,
+      content: { "application/json": { schema: ResumeCommandResultSchema } },
+    },
+  },
+  responses: {
+    204: { description: "Result accepted" },
+    401: { description: "Missing or expired editor credentials" },
+    404: { description: "Command expired or was already acknowledged" },
+  },
+});
+
+function editorToken(headers: Headers) {
+  const token = extractMcpToken(headers);
+  return token && ownsSession(token, extractEditorCredential(headers))
+    ? token
+    : null;
+}
+
+export function registerEditorEndpoints(app: OpenAPIHono) {
+  app.openapi(eventRoute, (c) => {
+    const token = editorToken(c.req.raw.headers);
+    if (!token) return c.body(null, 401);
 
     return streamSSE(c, async (stream) => {
-      const unsubscribe = subscribeToResumeUpdates(token, (event) => {
-        void stream.writeSSE({
-          event: "resume-updated",
-          data: JSON.stringify(event),
-        });
+      const disconnect = connectEditor(token, {
+        send: (event) => {
+          void stream.writeSSE({
+            event: "resume-command",
+            data: JSON.stringify(event),
+          });
+        },
+        close: () => {
+          stream.abort();
+        },
       });
-
+      if (!disconnect) {
+        await stream.writeSSE({ event: "editor-busy", data: "{}" });
+        return;
+      }
       const heartbeat = setInterval(() => {
-        void stream.writeSSE({
-          event: "ping",
-          data: "{}",
-        });
+        if (!isSessionActive(token)) stream.abort();
+        else void stream.writeSSE({ event: "ping", data: "{}" });
       }, 25000);
-
-      stream.onAbort(() => {
-        clearInterval(heartbeat);
-        unsubscribe();
+      const closed = new Promise<void>((resolve) => {
+        stream.onAbort(() => {
+          clearInterval(heartbeat);
+          disconnect();
+          resolve();
+        });
       });
-
-      const aborted = new Promise<void>((resolve) => {
-        stream.onAbort(() => resolve());
-      });
-      await stream.writeSSE({
-        event: "connected",
-        data: JSON.stringify({ connected: true }),
-      });
-      await aborted;
+      await stream.writeSSE({ event: "connected", data: "{}" });
+      await closed;
     });
+  });
+
+  app.openapi(resultRoute, (c) => {
+    const token = editorToken(c.req.raw.headers);
+    if (!token) return c.body(null, 401);
+
+    const { id } = c.req.valid("param");
+    const result = c.req.valid("json");
+    if (!completeCommand(token, id, result)) return c.body(null, 404);
+    return c.body(null, 204);
   });
 }

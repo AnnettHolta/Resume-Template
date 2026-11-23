@@ -1,218 +1,116 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+﻿import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { findSkillCatalogItem } from "@/data/skillsCatalog";
-import { EducationItemSchema, ExperienceItemSchema } from "@/lib/resumeSchema";
 import {
-  readSessionResume,
-  writeSessionResume,
-} from "@/server/storage/resumeFileStore";
+  ProfilePatchSchema,
+  RevisionSchema,
+  type ResumeCommand,
+} from "@/lib/resumeCommands";
+import { EducationItemSchema, ExperienceItemSchema } from "@/lib/resumeSchema";
+import { requestEditor } from "@/server/storage/editorSessions";
 
 export function createResumeMcpServer(token: string): McpServer {
   const server = new McpServer({
     name: "resume-template-mcp",
-    version: "1.0.0",
+    version: "2.0.0",
   });
 
-  const requireSession = () => {
-    const session = readSessionResume(token);
-    if (!session) {
-      throw new Error("MCP session is expired or revoked");
+  async function relay(
+    command: ResumeCommand,
+    signal: AbortSignal,
+  ): Promise<CallToolResult> {
+    const result = await requestEditor(token, command, signal);
+    if (!result) {
+      return {
+        isError: true,
+        content: [
+          {
+            type: "text",
+            text: "The browser editor is disconnected or did not confirm the command. Open the editor and call get_resume before retrying.",
+          },
+        ],
+      };
     }
-    return session.data;
-  };
+    if (result.status === "stale" || result.status === "conflict") {
+      const reason =
+        result.status === "stale"
+          ? "That resume revision is unavailable."
+          : `The editor changed these fields: ${result.fields.join(", ")}.`;
+      return {
+        isError: true,
+        content: [
+          {
+            type: "text",
+            text: `${reason} No part of this edit was applied. Call get_resume before trying again.`,
+          },
+        ],
+      };
+    }
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  }
 
+  const revision = {
+    revision: RevisionSchema.describe(
+      "Revision returned by get_resume or the last successful edit",
+    ),
+  };
   server.tool(
     "get_resume",
-    "Read the current resume JSON for this session",
+    "Read the live browser resume and its revision",
     {},
-    async () => {
-      const data = requireSession();
-      return {
-        content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
-      };
-    },
+    (_, { signal }) => relay({ type: "read" }, signal),
   );
 
   server.tool(
     "update_profile",
-    "Update profile fields (name, headline, summary, and contact info)",
-    {
-      name: z.string().optional(),
-      headline: z.string().optional(),
-      summary: z.string().optional(),
-      contact: z
-        .object({
-          email: z.string().optional(),
-          phone: z.string().optional(),
-          location: z.string().optional(),
-          website: z.string().optional(),
-          linkedin: z.string().optional(),
-          github: z.string().optional(),
-        })
-        .optional(),
-    },
-    async (args) => {
-      const current = requireSession();
-      const next = {
-        ...current,
-        profile: {
-          ...current.profile,
-          ...(args.name !== undefined ? { name: args.name } : {}),
-          ...(args.headline !== undefined ? { headline: args.headline } : {}),
-          ...(args.summary !== undefined ? { summary: args.summary } : {}),
-          contact: {
-            ...current.profile.contact,
-            ...(args.contact ?? {}),
-          },
-        },
-      };
-      writeSessionResume(token, next, "mcp");
-      return {
-        content: [
-          { type: "text", text: JSON.stringify(next.profile, null, 2) },
-        ],
-      };
-    },
+    "Update only the supplied profile or contact fields",
+    { ...ProfilePatchSchema.shape, ...revision },
+    ({ revision, ...patch }, { signal }) =>
+      relay({ type: "update_profile", revision, patch }, signal),
   );
 
   server.tool(
     "upsert_experience",
-    "Add a new experience entry or update an existing one by id",
-    {
-      item: ExperienceItemSchema,
-    },
-    async ({ item }) => {
-      const current = requireSession();
-      const exists = current.experience.some((e) => e.id === item.id);
-      const nextExperience = exists
-        ? current.experience.map((e) => (e.id === item.id ? item : e))
-        : [item, ...current.experience];
-      const next = { ...current, experience: nextExperience };
-      writeSessionResume(token, next, "mcp");
-      return {
-        content: [
-          { type: "text", text: JSON.stringify(next.experience, null, 2) },
-        ],
-      };
-    },
+    "Add an experience entry, or change fields relative to the revision by ID",
+    { item: ExperienceItemSchema, ...revision },
+    (args, { signal }) => relay({ type: "upsert_experience", ...args }, signal),
   );
 
   server.tool(
     "delete_experience",
-    "Delete an experience entry by id",
-    {
-      id: z.string(),
-    },
-    async ({ id }) => {
-      const current = requireSession();
-      const next = {
-        ...current,
-        experience: current.experience.filter((e) => e.id !== id),
-      };
-      writeSessionResume(token, next, "mcp");
-      return {
-        content: [
-          { type: "text", text: JSON.stringify(next.experience, null, 2) },
-        ],
-      };
-    },
+    "Delete an experience entry by ID",
+    { id: z.string().min(1), ...revision },
+    (args, { signal }) => relay({ type: "delete_experience", ...args }, signal),
   );
 
   server.tool(
     "upsert_education",
-    "Add a new education entry or update an existing one by id",
-    {
-      item: EducationItemSchema,
-    },
-    async ({ item }) => {
-      const current = requireSession();
-      const exists = current.education.some((e) => e.id === item.id);
-      const nextEducation = exists
-        ? current.education.map((e) => (e.id === item.id ? item : e))
-        : [item, ...current.education];
-      const next = { ...current, education: nextEducation };
-      writeSessionResume(token, next, "mcp");
-      return {
-        content: [
-          { type: "text", text: JSON.stringify(next.education, null, 2) },
-        ],
-      };
-    },
+    "Add an education entry, or change fields relative to the revision by ID",
+    { item: EducationItemSchema, ...revision },
+    (args, { signal }) => relay({ type: "upsert_education", ...args }, signal),
   );
 
   server.tool(
     "delete_education",
-    "Delete an education entry by id",
-    {
-      id: z.string(),
-    },
-    async ({ id }) => {
-      const current = requireSession();
-      const next = {
-        ...current,
-        education: current.education.filter((e) => e.id !== id),
-      };
-      writeSessionResume(token, next, "mcp");
-      return {
-        content: [
-          { type: "text", text: JSON.stringify(next.education, null, 2) },
-        ],
-      };
-    },
+    "Delete an education entry by ID",
+    { id: z.string().min(1), ...revision },
+    (args, { signal }) => relay({ type: "delete_education", ...args }, signal),
   );
 
   server.tool(
     "add_skills",
-    "Add one or more skills (auto-resolving catalog aliases like css -> CSS3)",
-    {
-      skills: z.array(z.string()),
-    },
-    async ({ skills }) => {
-      const current = requireSession();
-      const existingLower = new Set(
-        current.skills.map((s) => s.trim().toLowerCase()),
-      );
-      const added: string[] = [];
-
-      for (const raw of skills) {
-        const trimmed = raw.trim();
-        if (!trimmed) continue;
-        const matched = findSkillCatalogItem(trimmed);
-        const resolved = matched ? matched.name : trimmed;
-        if (!existingLower.has(resolved.toLowerCase())) {
-          existingLower.add(resolved.toLowerCase());
-          added.push(resolved);
-        }
-      }
-
-      const next = { ...current, skills: [...current.skills, ...added] };
-      writeSessionResume(token, next, "mcp");
-      return {
-        content: [{ type: "text", text: JSON.stringify(next.skills, null, 2) }],
-      };
-    },
+    "Add skills and resolve catalog aliases",
+    { skills: z.array(z.string()), ...revision },
+    (args, { signal }) => relay({ type: "add_skills", ...args }, signal),
   );
 
   server.tool(
     "remove_skills",
-    "Remove one or more skills by name (case-insensitive)",
-    {
-      skills: z.array(z.string()),
-    },
-    async ({ skills }) => {
-      const current = requireSession();
-      const toRemove = new Set(skills.map((s) => s.trim().toLowerCase()));
-      const next = {
-        ...current,
-        skills: current.skills.filter(
-          (s) => !toRemove.has(s.trim().toLowerCase()),
-        ),
-      };
-      writeSessionResume(token, next, "mcp");
-      return {
-        content: [{ type: "text", text: JSON.stringify(next.skills, null, 2) }],
-      };
-    },
+    "Remove skills by name or catalog alias",
+    { skills: z.array(z.string()), ...revision },
+    (args, { signal }) => relay({ type: "remove_skills", ...args }, signal),
   );
 
   return server;

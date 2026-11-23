@@ -27,7 +27,7 @@ function EducationCard({ item, onCommit, onDelete }: EducationCardProps) {
   };
 
   return (
-    <article className={styles.card}>
+    <article className={styles.card} data-education-id={item.id}>
       <div className={styles.logoBox} aria-hidden="true">
         <GraduationCap size={22} strokeWidth={1.5} />
       </div>

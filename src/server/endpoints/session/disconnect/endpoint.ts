@@ -1,9 +1,10 @@
 import { createRoute, type OpenAPIHono } from "@hono/zod-openapi";
 import { deleteCookie } from "hono/cookie";
-import { revokeSession } from "@/server/storage/resumeFileStore";
+import { revokeSession } from "@/server/storage/editorSessions";
 import {
   extractMcpToken,
   isHttpsRequest,
+  MCP_EDITOR_COOKIE,
   MCP_TOKEN_COOKIE,
 } from "@/server/storage/tokenUtils";
 import { DisconnectSessionResponseSchema } from "./response";
@@ -31,10 +32,12 @@ export function registerDisconnectSessionEndpoint(app: OpenAPIHono) {
     if (token) {
       revokeSession(token);
     }
-    deleteCookie(c, MCP_TOKEN_COOKIE, {
+    const cookie = {
       path: "/",
       secure: isHttpsRequest(c.req.raw),
-    });
+    };
+    deleteCookie(c, MCP_TOKEN_COOKIE, cookie);
+    deleteCookie(c, MCP_EDITOR_COOKIE, cookie);
     return c.json({ disconnected: true }, 200);
   });
 }

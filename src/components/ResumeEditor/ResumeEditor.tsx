@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type {
   EducationItem,
   ExperienceItem,
@@ -8,6 +8,12 @@ import type {
   ResumeProfile,
 } from "@/types/resume";
 import { downloadResumeJson, parseResumeJson } from "@/lib/resumeStorage";
+import {
+  flushIndexedDbWrites,
+  getSaveStatus,
+  retryIndexedDbWrite,
+  subscribeToSaveStatus,
+} from "@/lib/indexedDbStorage";
 import { useMcpSync } from "@/hooks/useMcpSync";
 import { useResumeStore } from "@/store/useResumeStore";
 import { Toolbar } from "@/components/Toolbar/Toolbar";
@@ -44,15 +50,33 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
   const activeIndex = entries.length > 0 ? index : 0;
   const currentResume = activeEntries[activeIndex] ?? initialData;
 
-  const {
-    mcpToken,
-    isMcpExpired,
-    conflict,
-    keepLocal,
-    useRemote,
-    notifyTokenChange,
-    notifySessionRevalidated,
-  } = useMcpSync(initialData, hasHydrated);
+  const { mcpToken, isMcpExpired, isEditorConnected, notifyTokenChange } =
+    useMcpSync(initialData, hasHydrated);
+  const saveStatus = useSyncExternalStore(
+    subscribeToSaveStatus,
+    getSaveStatus,
+    (): ReturnType<typeof getSaveStatus> => "idle",
+  );
+
+  useEffect(() => {
+    const flushWhenHidden = () => {
+      if (document.visibilityState === "hidden") flushIndexedDbWrites();
+    };
+    window.addEventListener("pagehide", flushIndexedDbWrites);
+    document.addEventListener("visibilitychange", flushWhenHidden);
+    return () => {
+      window.removeEventListener("pagehide", flushIndexedDbWrites);
+      document.removeEventListener("visibilitychange", flushWhenHidden);
+    };
+  }, []);
+
+  const commitSection = (change: Partial<ResumeData>) => {
+    const { entries, index } = useResumeStore.getState();
+    commitResume(
+      { ...(entries[index] ?? initialData), ...change },
+      initialData,
+    );
+  };
 
   const handleImportJson = async (file: File) => {
     const text = await file.text().catch(() => null);
@@ -71,19 +95,19 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
   };
 
   const handleProfileCommit = (nextProfile: ResumeProfile) => {
-    commitResume({ ...currentResume, profile: nextProfile }, initialData);
+    commitSection({ profile: nextProfile });
   };
 
   const handleExperienceChange = (nextExperience: ExperienceItem[]) => {
-    commitResume({ ...currentResume, experience: nextExperience }, initialData);
+    commitSection({ experience: nextExperience });
   };
 
   const handleEducationChange = (nextEducation: EducationItem[]) => {
-    commitResume({ ...currentResume, education: nextEducation }, initialData);
+    commitSection({ education: nextEducation });
   };
 
   const handleSkillsChange = (nextSkills: string[]) => {
-    commitResume({ ...currentResume, skills: nextSkills }, initialData);
+    commitSection({ skills: nextSkills });
   };
 
   return (
@@ -93,7 +117,7 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
         canRedo={activeIndex < activeEntries.length - 1}
         historyPosition={activeIndex + 1}
         historyTotal={activeEntries.length}
-        isMcpConnected={Boolean(mcpToken) && !isMcpExpired}
+        isMcpConnected={isEditorConnected}
         onUndo={undo}
         onRedo={redo}
         onDownloadJson={() => downloadResumeJson(currentResume)}
@@ -104,34 +128,6 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
       />
 
       <main className={styles.canvas}>
-        {conflict && (
-          <section
-            className={`${styles.conflict} no-print`}
-            aria-labelledby="sync-conflict"
-          >
-            <div role="status">
-              <h2 id="sync-conflict">Two versions of this resume</h2>
-              <p>
-                Your editor draft is still here. Choose which version to sync,
-                or download the session copy to review it.
-              </p>
-            </div>
-            <div className={styles.conflictActions}>
-              <button type="button" onClick={keepLocal}>
-                Sync editor draft
-              </button>
-              <button type="button" onClick={useRemote}>
-                Use session version
-              </button>
-              <button
-                type="button"
-                onClick={() => downloadResumeJson(conflict)}
-              >
-                Download session copy
-              </button>
-            </div>
-          </section>
-        )}
         <div className={styles.sheet}>
           <ResumeHeader
             profile={currentResume.profile}
@@ -151,11 +147,26 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
           />
         </div>
 
-        <footer className={`${styles.footer} no-print`} role="status">
-          <p>
-            {statusMessage ? `${statusMessage} · ` : ""}
-            History is automatically saved to IndexedDB (1s debounce).
-          </p>
+        <footer className={`${styles.footer} no-print`}>
+          <div role="status">
+            {statusMessage && <p>{statusMessage}</p>}
+            {saveStatus === "saving" && <p>Saving on this device…</p>}
+            {saveStatus === "saved" && <p>Saved on this device</p>}
+            {saveStatus === "error" && <p>Couldn’t save on this device</p>}
+          </div>
+          {saveStatus === "error" && (
+            <div className={styles.saveActions}>
+              <button type="button" onClick={retryIndexedDbWrite}>
+                Retry save
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadResumeJson(currentResume)}
+              >
+                Download JSON
+              </button>
+            </div>
+          )}
         </footer>
       </main>
 
@@ -163,9 +174,8 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
         isOpen={isMcpModalOpen}
         token={mcpToken}
         isSessionExpired={isMcpExpired}
-        currentResume={currentResume}
+        isEditorConnected={isEditorConnected}
         onTokenChange={notifyTokenChange}
-        onSessionRevalidated={notifySessionRevalidated}
         onClose={() => setIsMcpModalOpen(false)}
       />
 

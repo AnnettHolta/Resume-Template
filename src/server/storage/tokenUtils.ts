@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
 export const MCP_TOKEN_COOKIE = "resumeMcpToken";
+export const MCP_EDITOR_COOKIE = "resumeMcpEditor";
 const TOKEN_REGEX = /^[a-zA-Z0-9_-]{16,64}$/;
 
 export function isValidMcpToken(token: unknown): token is string {
@@ -28,10 +29,19 @@ export function parseCookieValue(
   for (const part of parts) {
     const [rawKey, ...rest] = part.trim().split("=");
     if (rawKey === name) {
-      return decodeURIComponent(rest.join("="));
+      try {
+        return decodeURIComponent(rest.join("="));
+      } catch {
+        return null;
+      }
     }
   }
   return null;
+}
+
+export function extractEditorCredential(headers: Headers): string | null {
+  const owner = parseCookieValue(headers.get("cookie"), MCP_EDITOR_COOKIE);
+  return isValidMcpToken(owner) ? owner : null;
 }
 
 export function extractMcpToken(headers: Headers): string | null {

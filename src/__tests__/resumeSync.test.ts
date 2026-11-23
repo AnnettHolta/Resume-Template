@@ -1,140 +1,129 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { randomUUID } from "node:crypto";
+import { describe, expect, it } from "vitest";
 import initialResume from "@/data/resume.json";
-import { createResumeSync } from "@/lib/resumeSync";
+import { createEditorCommands } from "@/lib/editorCommands";
 import type { ResumeData } from "@/types/resume";
+import type { ResumeCommand } from "@/lib/resumeCommands";
 
-function setup() {
-  vi.useFakeTimers();
-  let revision = 1;
-  let server: ResumeData = initialResume;
-  let editor: ResumeData = initialResume;
-  const showConflict = vi.fn();
-  const fetchResume = vi.fn(async (_path: string, init: RequestInit) => {
-    if (init.method === "PUT") {
-      if (new Headers(init.headers).get("If-Match") !== String(revision)) {
-        return new Response(null, { status: 412 });
-      }
-      server = JSON.parse(String(init.body));
-      revision++;
-    }
-    return Response.json(server, { headers: { ETag: String(revision) } });
-  });
-  vi.stubGlobal("fetch", fetchResume);
-
-  const sync = createResumeSync({
-    token: "test-token",
-    readLocal: () => editor,
-    isEditing: () => false,
-    applyRemote: (data) => {
-      editor = data;
+function setup(settleDraft: () => void = () => {}) {
+  let resume: ResumeData = structuredClone(initialResume);
+  const handle = createEditorCommands({
+    readResume: () => resume,
+    commitResume: (data) => {
+      resume = data;
     },
-    showConflict,
-    showStatus: vi.fn(),
-    expire: vi.fn(),
+    settleDraft,
   });
-  const changeHeadline = (data: ResumeData, headline: string) => ({
-    ...data,
-    profile: { ...data.profile, headline },
-  });
+  const run = (command: ResumeCommand) =>
+    handle({ id: randomUUID(), command, expiresAt: Infinity });
+  const snapshot = () => {
+    const result = run({ type: "read" });
+    if (result.status !== "read") throw new Error("Expected a snapshot");
+    return result;
+  };
   return {
-    sync,
-    fetchResume,
-    showConflict,
-    editorHeadline: () => editor.profile.headline,
-    serverHeadline: () => server.profile.headline,
-    editLocally: (headline: string) => {
-      editor = changeHeadline(editor, headline);
-      sync.scheduleSave();
+    run,
+    snapshot,
+    local: () => resume,
+    editProfile: (headline: string) => {
+      resume = { ...resume, profile: { ...resume.profile, headline } };
     },
-    editRemotely: (headline: string) => {
-      server = changeHeadline(server, headline);
-      revision++;
+    changeFirstBullet: () => {
+      resume = {
+        ...resume,
+        experience: resume.experience.map((item, index) =>
+          index === 0 ? { ...item, bullets: ["Local result"] } : item,
+        ),
+      };
+    },
+    addLocalSkill: () => {
+      resume = { ...resume, skills: [...resume.skills, "Local skill"] };
     },
   };
 }
 
-afterEach(() => {
-  vi.useRealTimers();
-  vi.unstubAllGlobals();
-});
+describe("editor-owned MCP commands", () => {
+  it("preserves a local bullet edit when the agent updates the headline", () => {
+    const { run, local, snapshot, changeFirstBullet } = setup();
+    const { revision } = snapshot();
+    changeFirstBullet();
+    const result = run({
+      type: "update_profile",
+      revision,
+      patch: { headline: "Agent headline" },
+    });
+    expect(result.status).toBe("applied");
+    expect(local().profile.headline).toBe("Agent headline");
+    expect(local().experience[0].bullets).toEqual(["Local result"]);
+  });
 
-describe("MCP resume sync", () => {
-  it("keeps a pending browser edit when a remote edit wins before the write", async () => {
-    const {
-      sync,
-      editLocally,
-      editRemotely,
-      editorHeadline,
-      serverHeadline,
-      showConflict,
-    } = setup();
-    sync.refresh();
-    await vi.advanceTimersByTimeAsync(0);
-    editLocally("Editor draft");
-    editRemotely("Agent edit");
-    await vi.advanceTimersByTimeAsync(1000);
+  it("settles a pending local edit before rejecting a conflicting profile patch atomically", () => {
+    const editor: ReturnType<typeof setup> = setup(() => {
+      editor.editProfile("Local headline");
+    });
+    const { revision } = editor.snapshot();
+    const result = editor.run({
+      type: "update_profile",
+      revision,
+      patch: {
+        headline: "Stale agent headline",
+        name: "Another name",
+      },
+    });
+    expect(result).toEqual({
+      status: "conflict",
+      fields: ["profile.headline"],
+    });
+    expect(editor.local().profile.headline).toBe("Local headline");
+    expect(editor.local().profile.name).toBe(initialResume.profile.name);
+  });
 
-    expect(editorHeadline()).toBe("Editor draft");
-    expect(serverHeadline()).toBe("Agent edit");
-    expect(showConflict).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        profile: expect.objectContaining({ headline: "Agent edit" }),
-      }),
+  it("merges changed fields within one entry and protects it from a stale delete", () => {
+    const { run, local, snapshot, changeFirstBullet } = setup();
+    const { revision, resume } = snapshot();
+    changeFirstBullet();
+    const item = { ...resume.experience[0], title: "New title" };
+    expect(run({ type: "upsert_experience", revision, item }).status).toBe(
+      "applied",
     );
-
-    sync.keepLocal();
-    await vi.advanceTimersByTimeAsync(0);
-    expect(serverHeadline()).toBe("Editor draft");
-    expect(showConflict).toHaveBeenLastCalledWith(null);
+    expect(local().experience[0]).toMatchObject({
+      title: "New title",
+      bullets: ["Local result"],
+    });
+    expect(run({ type: "delete_experience", revision, id: item.id })).toEqual({
+      status: "conflict",
+      fields: [`experience.${item.id}`],
+    });
   });
 
-  it("applies a remote edit after a completed local write when the editor is clean", async () => {
-    const { sync, editLocally, editRemotely, editorHeadline, serverHeadline } =
-      setup();
-    sync.refresh();
-    await vi.advanceTimersByTimeAsync(0);
-    editLocally("Browser edit");
-    await vi.advanceTimersByTimeAsync(1000);
-    expect(serverHeadline()).toBe("Browser edit");
-
-    editRemotely("Later agent edit");
-    sync.refresh();
-    await vi.advanceTimersByTimeAsync(0);
-    expect(editorHeadline()).toBe("Later agent edit");
-  });
-
-  it("preserves both versions on reconnect until the user selects the session version", async () => {
-    const {
-      sync,
-      editLocally,
-      editRemotely,
-      editorHeadline,
-      serverHeadline,
-      fetchResume,
-    } = setup();
-    sync.refresh();
-    await vi.advanceTimersByTimeAsync(0);
-    editLocally("Offline draft");
-    editRemotely("Missed agent edit");
-    sync.refresh();
-    await vi.advanceTimersByTimeAsync(1000);
-    expect(editorHeadline()).toBe("Offline draft");
-    expect(serverHeadline()).toBe("Missed agent edit");
+  it("preserves unrelated local skills and supports alias-based removal", () => {
+    const { run, snapshot, local, addLocalSkill } = setup();
+    const { revision } = snapshot();
+    addLocalSkill();
+    const added = run({
+      type: "add_skills",
+      revision,
+      skills: ["css", "CSS3"],
+    });
+    if (added.status !== "applied") throw new Error("Expected skill update");
+    expect(local().skills.slice(-2)).toEqual(["Local skill", "CSS3"]);
     expect(
-      fetchResume.mock.calls.every(([, init]) => init.method !== "PUT"),
-    ).toBe(true);
-
-    sync.useRemote();
-    expect(editorHeadline()).toBe("Missed agent edit");
+      run({ type: "remove_skills", revision: added.revision, skills: ["css"] })
+        .status,
+    ).toBe("applied");
+    expect(local().skills).toContain("Local skill");
+    expect(local().skills).not.toContain("CSS3");
   });
 
-  it("can keep the editor draft when first opening an already divergent session", async () => {
-    const { sync, editRemotely, serverHeadline } = setup();
-    editRemotely("Remote edit before startup");
-    sync.refresh();
-    await vi.advanceTimersByTimeAsync(0);
-    sync.keepLocal();
-    await vi.advanceTimersByTimeAsync(0);
-    expect(serverHeadline()).toBe(initialResume.profile.headline);
+  it("requires a fresh read after the editor changes or the revision window expires", () => {
+    const previous = setup().snapshot().revision;
+    const { run, snapshot } = setup();
+    const original = snapshot().revision;
+    for (let i = 0; i < 50; i++) snapshot();
+    for (const revision of [previous, original]) {
+      expect(
+        run({ type: "update_profile", revision, patch: { name: "Ignored" } }),
+      ).toEqual({ status: "stale" });
+    }
   });
 });

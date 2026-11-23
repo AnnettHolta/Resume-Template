@@ -45,7 +45,7 @@ export function ExperienceCard({
     Boolean(trimmedLogoSrc) && failedImageUrl !== trimmedLogoSrc;
 
   return (
-    <article className={styles.card}>
+    <article className={styles.card} data-experience-id={item.id}>
       <div className={styles.logoColumn}>
         <button
           type="button"

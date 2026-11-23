@@ -1,10 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import initialResume from "@/data/resume.json";
 import { McpModal } from "@/components/McpModal/McpModal";
 import { PrintModal } from "@/components/PrintModal/PrintModal";
 import { SkillsSection } from "@/components/SkillsSection/SkillsSection";
-import type { ResumeData } from "@/types/resume";
 
 describe("SkillsSection", () => {
   it("auto-corrects css to CSS3 and stores lowercase aria-label", () => {
@@ -77,9 +75,8 @@ describe("McpModal", () => {
         isOpen
         token={null}
         isSessionExpired={false}
-        currentResume={initialResume as ResumeData}
+        isEditorConnected={false}
         onTokenChange={onTokenChange}
-        onSessionRevalidated={vi.fn()}
         onClose={vi.fn()}
       />,
     );
@@ -96,9 +93,8 @@ describe("McpModal", () => {
         isOpen
         token="11111111-2222-3333-4444-555555555555"
         isSessionExpired={false}
-        currentResume={initialResume as ResumeData}
+        isEditorConnected={false}
         onTokenChange={onTokenChange}
-        onSessionRevalidated={vi.fn()}
         onClose={vi.fn()}
       />,
     );

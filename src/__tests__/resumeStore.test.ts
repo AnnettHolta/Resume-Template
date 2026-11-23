@@ -1,14 +1,16 @@
-import { set } from "idb-keyval";
+import { get, set } from "idb-keyval";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import initialResume from "@/data/resume.json";
 import {
   cancelIndexedDbWrites,
   debouncedIndexedDbStorage,
   flushIndexedDbWrites,
+  getSaveStatus,
   HISTORY_PERSIST_DEBOUNCE_MS,
+  retryIndexedDbWrite,
 } from "@/lib/indexedDbStorage";
 import { MAX_HISTORY_LENGTH } from "@/lib/resumeStorage";
-import { useResumeStore } from "@/store/useResumeStore";
+import { RESUME_STORE_KEY, useResumeStore } from "@/store/useResumeStore";
 import type { ResumeData } from "@/types/resume";
 
 describe("useResumeStore & debouncedIndexedDbStorage", () => {
@@ -92,13 +94,58 @@ describe("useResumeStore & debouncedIndexedDbStorage", () => {
     vi.advanceTimersByTime(HISTORY_PERSIST_DEBOUNCE_MS - 100);
     expect(setMock).not.toHaveBeenCalled();
 
-    vi.advanceTimersByTime(100);
+    await vi.advanceTimersByTimeAsync(100);
     expect(setMock).toHaveBeenCalledTimes(1);
     expect(setMock).toHaveBeenCalledWith("test-key", '{"a":2}');
 
     debouncedIndexedDbStorage.setItem("test-key", '{"a":3}');
     flushIndexedDbWrites();
+    await vi.advanceTimersByTimeAsync(0);
     expect(setMock).toHaveBeenCalledTimes(2);
     expect(setMock).toHaveBeenLastCalledWith("test-key", '{"a":3}');
+  });
+
+  it("handles a failed save and retries the current payload", async () => {
+    vi.mocked(set).mockRejectedValueOnce(new Error("Storage full"));
+    debouncedIndexedDbStorage.setItem("test-key", "draft");
+    expect(getSaveStatus()).toBe("saving");
+    await vi.advanceTimersByTimeAsync(HISTORY_PERSIST_DEBOUNCE_MS);
+    expect(getSaveStatus()).toBe("error");
+
+    retryIndexedDbWrite();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(getSaveStatus()).toBe("saved");
+    await expect(get("test-key")).resolves.toBe("draft");
+  });
+
+  it("waits for the latest write and keeps a reset after an in-flight edit", async () => {
+    let finishOldWrite = () => {};
+    vi.mocked(set).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishOldWrite = resolve;
+        }),
+    );
+    const store = useResumeStore.getState();
+    store.commitResume(
+      {
+        ...initialResume,
+        profile: { ...initialResume.profile, name: "Earlier edit" },
+      },
+      initialResume,
+    );
+    flushIndexedDbWrites();
+    await vi.advanceTimersByTimeAsync(0);
+
+    store.reset(initialResume);
+    expect(getSaveStatus()).toBe("saving");
+    finishOldWrite();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(getSaveStatus()).toBe("saved");
+    const stored = await get<string>(RESUME_STORE_KEY);
+    expect(JSON.parse(stored ?? "{}").state).toEqual({
+      entries: [initialResume],
+      index: 0,
+    });
   });
 });

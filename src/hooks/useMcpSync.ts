@@ -1,15 +1,18 @@
 ﻿"use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { flushIndexedDbWrites } from "@/lib/indexedDbStorage";
-import { createResumeSync } from "@/lib/resumeSync";
+import { useEffect, useState, useSyncExternalStore } from "react";
+import { createEditorCommands } from "@/lib/editorCommands";
+import {
+  ResumeCommandEventSchema,
+  type ResumeEdit,
+} from "@/lib/resumeCommands";
 import { useResumeStore } from "@/store/useResumeStore";
 import type { ResumeData } from "@/types/resume";
 
 const MCP_COOKIE_NAME = "resumeMcpToken";
-export const MCP_COOKIE_EVENT = "resume-mcp-cookie-change";
+const MCP_COOKIE_EVENT = "resume-mcp-cookie-change";
 
-function readMcpCookie(): string | null {
+function readMcpCookie() {
   if (typeof document === "undefined") return null;
   const cookie = document.cookie
     .split(";")
@@ -23,6 +26,35 @@ function subscribeMcpCookie(callback: () => void) {
   return () => window.removeEventListener(MCP_COOKIE_EVENT, callback);
 }
 
+function settleFocusedDraft(edit: ResumeEdit) {
+  const active = document.activeElement;
+  if (
+    !(active instanceof HTMLElement) ||
+    !active.matches("main :is(input, textarea)")
+  )
+    return;
+
+  // Existing inline editors commit on blur. Settle the affected draft before comparing it.
+  if (
+    (edit.type === "update_profile" &&
+      active.closest("[data-resume-profile]")) ||
+    (edit.type === "upsert_experience" &&
+      active.closest<HTMLElement>("[data-experience-id]")?.dataset
+        .experienceId === edit.item.id) ||
+    (edit.type === "delete_experience" &&
+      active.closest<HTMLElement>("[data-experience-id]")?.dataset
+        .experienceId === edit.id) ||
+    (edit.type === "upsert_education" &&
+      active.closest<HTMLElement>("[data-education-id]")?.dataset
+        .educationId === edit.item.id) ||
+    (edit.type === "delete_education" &&
+      active.closest<HTMLElement>("[data-education-id]")?.dataset
+        .educationId === edit.id)
+  ) {
+    active.blur();
+  }
+}
+
 export function useMcpSync(initialData: ResumeData, hasHydrated: boolean) {
   const mcpToken = useSyncExternalStore(
     subscribeMcpCookie,
@@ -30,88 +62,83 @@ export function useMcpSync(initialData: ResumeData, hasHydrated: boolean) {
     () => null,
   );
   const [isMcpExpired, setIsMcpExpired] = useState(false);
-  const [sessionNonce, setSessionNonce] = useState(0);
-  const [conflict, setConflict] = useState<ResumeData | null>(null);
-  const syncRef = useRef<ReturnType<typeof createResumeSync> | null>(null);
+  const [isEditorConnected, setIsEditorConnected] = useState(false);
 
   useEffect(() => {
-    const flush = () => {
-      flushIndexedDbWrites();
-      syncRef.current?.scheduleSave.flush();
-    };
-    const flushWhenHidden = () => {
-      if (document.visibilityState === "hidden") flush();
-    };
-    window.addEventListener("pagehide", flush);
-    document.addEventListener("visibilitychange", flushWhenHidden);
-    return () => {
-      window.removeEventListener("pagehide", flush);
-      document.removeEventListener("visibilitychange", flushWhenHidden);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!mcpToken || isMcpExpired || !hasHydrated) return;
-
+    if (!mcpToken || !hasHydrated) return;
+    const abort = new AbortController();
     const { commitResume, setStatusMessage } = useResumeStore.getState();
-    const readLocal = () => {
-      const { entries, index } = useResumeStore.getState();
-      return entries[index] ?? initialData;
-    };
-    const sync = createResumeSync({
-      token: mcpToken,
-      readLocal,
-      isEditing: () =>
-        Boolean(
-          document.activeElement?.matches(
-            "main :is(input, textarea, [contenteditable=true])",
-          ),
-        ),
-      applyRemote: (data) => commitResume(data, initialData),
-      showConflict: setConflict,
-      showStatus: setStatusMessage,
-      expire: () => {
-        setIsMcpExpired(true);
-        setStatusMessage("MCP session expired. Open MCP to reconnect.");
+    const handleCommand = createEditorCommands({
+      readResume: () => {
+        const { entries, index } = useResumeStore.getState();
+        return entries[index] ?? initialData;
       },
-    });
-    syncRef.current = sync;
-    const unsubscribe = useResumeStore.subscribe((state, previous) => {
-      if (state.entries[state.index] !== previous.entries[previous.index]) {
-        sync.scheduleSave();
-      }
+      commitResume: (data) => commitResume(data, initialData),
+      settleDraft: settleFocusedDraft,
     });
 
     const events = new EventSource("/api/resume/events");
-    events.addEventListener("connected", sync.refresh);
-    events.addEventListener("resume-updated", sync.refresh);
-    events.onerror = sync.refresh;
-    window.addEventListener("online", sync.refresh);
-    sync.refresh();
+    events.addEventListener("connected", () => {
+      setIsMcpExpired(false);
+      setIsEditorConnected(true);
+    });
+    events.addEventListener("resume-command", async (event) => {
+      if (abort.signal.aborted || readMcpCookie() !== mcpToken) return;
+      try {
+        const command = ResumeCommandEventSchema.parse(JSON.parse(event.data));
+        if (command.expiresAt <= Date.now()) return;
+        const result = handleCommand(command);
+        if (command.command.type !== "read") {
+          if (result.status === "applied") setStatusMessage("MCP edit applied");
+          if (result.status === "conflict")
+            setStatusMessage(
+              `MCP edit skipped. Local changes kept in ${result.fields.join(", ")}.`,
+            );
+        }
+
+        const response = await fetch(
+          `/api/resume/commands/${command.id}/result`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(result),
+            signal: abort.signal,
+          },
+        ).catch(() => null);
+        if (
+          !response?.ok &&
+          !abort.signal.aborted &&
+          result.status === "applied"
+        ) {
+          setStatusMessage(
+            "MCP edit applied locally. The agent could not be notified.",
+          );
+        }
+      } catch {
+        if (!abort.signal.aborted)
+          setStatusMessage("Could not complete the MCP command.");
+      }
+    });
+
+    events.onerror = () => {
+      setIsEditorConnected(false);
+      if (events.readyState === EventSource.CLOSED) setIsMcpExpired(true);
+    };
 
     return () => {
-      sync.stop();
-      syncRef.current = null;
+      abort.abort();
       events.close();
-      unsubscribe();
-      window.removeEventListener("online", sync.refresh);
     };
-  }, [mcpToken, isMcpExpired, hasHydrated, initialData, sessionNonce]);
+  }, [mcpToken, hasHydrated, initialData]);
 
   return {
     mcpToken,
     isMcpExpired,
-    conflict: mcpToken && !isMcpExpired ? conflict : null,
-    keepLocal: () => syncRef.current?.keepLocal(),
-    useRemote: () => syncRef.current?.useRemote(),
+    isEditorConnected,
     notifyTokenChange: () => {
-      setConflict(null);
       setIsMcpExpired(false);
+      setIsEditorConnected(false);
       window.dispatchEvent(new Event(MCP_COOKIE_EVENT));
-    },
-    notifySessionRevalidated: () => {
-      setIsMcpExpired(false);
-      setSessionNonce((value) => value + 1);
     },
   };
 }

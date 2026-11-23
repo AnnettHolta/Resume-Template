@@ -1,7 +1,7 @@
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { createResumeMcpServer } from "@/server/mcp/createResumeMcpServer";
-import { isSessionActive } from "@/server/storage/resumeFileStore";
+import { isSessionActive } from "@/server/storage/editorSessions";
 import { extractMcpToken } from "@/server/storage/tokenUtils";
 
 export function registerMcpEndpoint(app: OpenAPIHono) {
