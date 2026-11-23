@@ -117,7 +117,7 @@ Run `npm run build:static` for a site hosted at the domain root. For a project s
 npm run build:static -- --base-path /ResumeTemplate
 ```
 
-Upload the contents of `out/` to the static host. To use the included workflow, select **GitHub Actions** as the source under **Settings → Pages**, then run **Publish to GitHub Pages** from the **Actions** tab. The workflow reads the configured base path automatically.
+Upload the contents of `out/` to the static host. On GitHub, **Deploy from a branch** publishes the repository files and can render the README as the home page. To publish the editor, go to **Settings → Pages → Build and deployment** and set **Source** to **GitHub Actions**. Then open **Actions → Publish to GitHub Pages**, click **Run workflow**, and select `main`. The workflow builds and deploys `out/` with the configured base path.
 
 If you switch back to the local production server after a static export, run `npm run build` before `npm run start`.
 
