@@ -158,7 +158,9 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
               ) : (
                 <>
                   <h1 className={styles.name}>{profile.name}</h1>
-                  <p className={styles.headline}>{profile.headline}</p>
+                  {(isEditing || profile.headline.trim()) && (
+                    <p className={styles.headline}>{profile.headline}</p>
+                  )}
 
                   <address className={styles.metaRow}>
                     {profile.contact.location && (
@@ -267,7 +269,12 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
         </div>
       </div>
 
-      <section className={styles.aboutSection} aria-labelledby="about-heading">
+      <section
+        className={`${styles.aboutSection} ${
+          !isEditing && !profile.summary.trim() ? "no-print" : ""
+        }`}
+        aria-labelledby="about-heading"
+      >
         <h2 id="about-heading" className={styles.sectionTitle}>
           About
         </h2>

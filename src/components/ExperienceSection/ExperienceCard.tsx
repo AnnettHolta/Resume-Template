@@ -167,12 +167,19 @@ export function ExperienceCard({
                 placeholder="Company"
                 aria-label="Company name"
               />
-              <span className={styles.separator} aria-hidden="true">
+              <span
+                className={`${styles.separator} ${
+                  !draft.employmentType.trim() ? "no-print" : ""
+                }`}
+                aria-hidden="true"
+              >
                 ·
               </span>
               <input
                 type="text"
-                className={styles.inlineType}
+                className={`${styles.inlineType} ${
+                  !draft.employmentType.trim() ? "no-print" : ""
+                }`}
                 value={draft.employmentType}
                 onChange={(e) =>
                   setDraft((prev) => ({
@@ -207,12 +214,19 @@ export function ExperienceCard({
                   commitItem(nextDraft);
                 }}
               />
-              <span className={styles.separator} aria-hidden="true">
+              <span
+                className={`${styles.separator} ${
+                  !draft.location.trim() ? "no-print" : ""
+                }`}
+                aria-hidden="true"
+              >
                 ·
               </span>
               <input
                 type="text"
-                className={styles.inlineLocation}
+                className={`${styles.inlineLocation} ${
+                  !draft.location.trim() ? "no-print" : ""
+                }`}
                 value={draft.location}
                 onChange={(e) =>
                   setDraft((prev) => ({ ...prev, location: e.target.value }))
@@ -237,9 +251,18 @@ export function ExperienceCard({
           </div>
         </div>
 
-        <ul className={styles.bullets}>
+        <ul
+          className={`${styles.bullets} ${
+            draft.bullets.every((b) => !b.trim()) ? "no-print" : ""
+          }`}
+        >
           {draft.bullets.map((bullet, idx) => (
-            <li key={`${item.id}-b-${idx}`} className={styles.bulletItem}>
+            <li
+              key={`${item.id}-b-${idx}`}
+              className={`${styles.bulletItem} ${
+                !bullet.trim() ? "no-print" : ""
+              }`}
+            >
               <span className={styles.bulletDot} aria-hidden="true">
                 •
               </span>

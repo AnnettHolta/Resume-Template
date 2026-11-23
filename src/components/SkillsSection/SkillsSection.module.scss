@@ -1,5 +1,21 @@
 @use "@/styles/variables" as *;
 
+@keyframes skillReveal {
+  0% {
+    max-width: 0;
+    opacity: 0;
+    padding-left: 0;
+    padding-right: 0;
+    border-color: transparent;
+  }
+  100% {
+    max-width: 240px;
+    opacity: 1;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
 .section {
   display: flex;
   flex-direction: column;
@@ -24,7 +40,7 @@
 .skillTag {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   padding: 0.32rem 0.75rem;
   border: 1px solid $color-border-subtle;
   border-radius: $radius-pill;
@@ -32,6 +48,7 @@
   font-weight: 500;
   color: $color-text-primary;
   background: $color-bg-subtle;
+  white-space: nowrap;
   transition: border-color 0.15s ease;
 
   &:hover {
@@ -44,6 +61,26 @@
     padding: 0.15rem 0.5rem;
     color: #000000;
   }
+}
+
+.skillTagEnter {
+  overflow: hidden;
+  animation: skillReveal 0.28s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.skillIcon {
+  flex-shrink: 0;
+  display: block;
+  object-fit: contain;
+}
+
+.fallbackIcon {
+  flex-shrink: 0;
+  color: $color-text-secondary;
+}
+
+.skillName {
+  line-height: 1.25;
 }
 
 .removeBtn {
@@ -60,19 +97,24 @@
   }
 }
 
-.addRow {
+.addContainer {
+  position: relative;
   margin-top: 0.25rem;
+  max-width: 360px;
+}
+
+.addRow {
   display: flex;
   gap: 0.5rem;
-  max-width: 340px;
 
   input {
     flex: 1;
-    padding: 0.42rem 0.75rem;
+    padding: 0.45rem 0.85rem;
     border: 1px solid $color-border-default;
     border-radius: $radius-pill;
     font-size: 0.8125rem;
     background: $color-bg-sheet;
+    transition: border-color 0.15s ease;
 
     &:focus {
       outline: none;
@@ -84,7 +126,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
-    padding: 0.42rem 0.85rem;
+    padding: 0.45rem 0.9rem;
     border: none;
     border-radius: $radius-pill;
     background: $color-accent-blue-soft;
@@ -98,4 +140,78 @@
       color: #ffffff;
     }
   }
+}
+
+.dropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 30;
+  list-style: none;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  border: 1px solid $color-border-default;
+  border-radius: $radius-md;
+  box-shadow: 0 -8px 28px -4px rgba(0, 0, 0, 0.08),
+    0 -2px 10px -2px rgba(0, 0, 0, 0.03);
+  padding: 0.35rem;
+  max-height: 260px;
+  overflow-y: auto;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform-origin: bottom center;
+  transform: translateY(4px) scale(0.99);
+  transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s ease;
+}
+
+.dropdownOpen {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+}
+
+.dropdownItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.48rem 0.65rem;
+  border: none;
+  border-radius: $radius-sm;
+  background: transparent;
+  text-align: left;
+  font-size: 0.8125rem;
+  color: $color-text-primary;
+  transition: background-color 0.1s ease;
+
+  &:hover {
+    background: $color-bg-subtle;
+  }
+}
+
+.dropdownItemActive {
+  background: $color-accent-blue-soft;
+  color: $color-accent-blue;
+}
+
+.dropdownLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.dropdownName {
+  font-weight: 500;
+}
+
+.dropdownCategory {
+  font-size: 0.6875rem;
+  color: $color-text-secondary;
+  flex-shrink: 0;
 }

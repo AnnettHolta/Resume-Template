@@ -56,12 +56,19 @@ function EducationCard({ item, onCommit, onDelete }: EducationCardProps) {
             placeholder="Degree"
             aria-label="Degree"
           />
-          <span className={styles.separator} aria-hidden="true">
+          <span
+            className={`${styles.separator} ${
+              !draft.field.trim() ? "no-print" : ""
+            }`}
+            aria-hidden="true"
+          >
             ,
           </span>
           <input
             type="text"
-            className={styles.inlineField}
+            className={`${styles.inlineField} ${
+              !draft.field.trim() ? "no-print" : ""
+            }`}
             value={draft.field}
             onChange={(e) =>
               setDraft((prev) => ({ ...prev, field: e.target.value }))
@@ -138,7 +145,10 @@ export function EducationSection({ items, onChange }: EducationSectionProps) {
   };
 
   return (
-    <section className={styles.section} aria-labelledby="education-heading">
+    <section
+      className={`${styles.section} ${items.length === 0 ? "no-print" : ""}`}
+      aria-labelledby="education-heading"
+    >
       <div className={styles.headerRow}>
         <h2 id="education-heading" className={styles.heading}>
           Education

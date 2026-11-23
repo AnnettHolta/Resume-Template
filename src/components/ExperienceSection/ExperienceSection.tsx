@@ -36,7 +36,10 @@ export function ExperienceSection({ items, onChange }: ExperienceSectionProps) {
   };
 
   return (
-    <section className={styles.section} aria-labelledby="experience-heading">
+    <section
+      className={`${styles.section} ${items.length === 0 ? "no-print" : ""}`}
+      aria-labelledby="experience-heading"
+    >
       <div className={styles.headerRow}>
         <h2 id="experience-heading" className={styles.heading}>
           Experience
