@@ -1,0 +1,170 @@
+@use "@/styles/variables" as *;
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(29, 29, 31, 0.24);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 500px;
+  background: $color-bg-sheet;
+  border: 1px solid $color-border-default;
+  border-radius: $radius-lg;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.14);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.iconBadge {
+  width: 36px;
+  height: 36px;
+  border-radius: $radius-sm;
+  background: $color-bg-subtle;
+  color: $color-text-primary;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: $color-text-primary;
+}
+
+.subtitle {
+  font-size: 0.75rem;
+  color: $color-text-secondary;
+}
+
+.closeBtn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: $color-text-secondary;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: $color-bg-subtle;
+    color: $color-text-primary;
+  }
+}
+
+.optionsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+
+  @media (max-width: 520px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.optionCard {
+  text-align: left;
+  padding: 1rem;
+  border-radius: $radius-md;
+  border: 1.5px solid $color-border-default;
+  background: $color-canvas;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: $color-text-muted;
+  }
+}
+
+.optionCardSelected {
+  border-color: $color-accent-blue;
+  background: $color-accent-blue-soft;
+
+  .optionHeader {
+    color: $color-accent-blue;
+  }
+}
+
+.optionHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: $color-text-primary;
+}
+
+.optionTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.optionDesc {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: $color-text-secondary;
+}
+
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.cancelBtn,
+.primaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.48rem 1rem;
+  border-radius: $radius-pill;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.cancelBtn {
+  border: 1px solid $color-border-default;
+  background: $color-bg-sheet;
+  color: $color-text-primary;
+
+  &:hover {
+    background: $color-bg-subtle;
+  }
+}
+
+.primaryBtn {
+  border: none;
+  background: $color-text-primary;
+  color: $color-bg-sheet;
+
+  &:hover {
+    background: #000000;
+  }
+}
+

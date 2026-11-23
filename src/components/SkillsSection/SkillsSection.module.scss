@@ -68,6 +68,13 @@
     padding: 0.15rem 0.5rem;
     color: #000000;
     cursor: default;
+
+    :global(html[data-print-mode="visual"]) & {
+      background: $color-bg-subtle;
+      border-color: $color-border-subtle;
+      padding: 0.3rem 0.7rem;
+      color: $color-text-primary;
+    }
   }
 }
 

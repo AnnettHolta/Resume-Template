@@ -20,6 +20,7 @@ import { ExperienceSection } from "@/components/ExperienceSection/ExperienceSect
 import { EducationSection } from "@/components/EducationSection/EducationSection";
 import { SkillsSection } from "@/components/SkillsSection/SkillsSection";
 import { McpModal } from "@/components/McpModal/McpModal";
+import { PrintModal, type PrintMode } from "@/components/PrintModal/PrintModal";
 import styles from "./ResumeEditor.module.scss";
 
 interface ResumeEditorProps {
@@ -66,6 +67,8 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
   const [isMcpExpired, setIsMcpExpired] = useState(false);
   const [mcpSessionNonce, setMcpSessionNonce] = useState(0);
   const [isMcpModalOpen, setIsMcpModalOpen] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [printMode, setPrintMode] = useState<PrintMode>("printer");
   const skipNextRemoteSyncRef = useRef(false);
 
   const activeEntries = entries.length > 0 ? entries : [initialData];
@@ -253,7 +256,7 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
         onImportJson={handleImportJson}
         onReset={() => reset(initialData)}
         onOpenMcp={() => setIsMcpModalOpen(true)}
-        onPrint={() => window.print()}
+        onPrint={() => setIsPrintModalOpen(true)}
       />
 
       <main className={styles.canvas}>
@@ -299,6 +302,20 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
           setStatusMessage("MCP session active");
         }}
         onClose={() => setIsMcpModalOpen(false)}
+      />
+
+      <PrintModal
+        isOpen={isPrintModalOpen}
+        initialMode={printMode}
+        onClose={() => setIsPrintModalOpen(false)}
+        onConfirmPrint={(mode) => {
+          setPrintMode(mode);
+          document.documentElement.dataset.printMode = mode;
+          setIsPrintModalOpen(false);
+          requestAnimationFrame(() => {
+            window.print();
+          });
+        }}
       />
     </div>
   );

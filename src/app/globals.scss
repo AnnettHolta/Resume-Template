@@ -63,12 +63,22 @@ button {
   html,
   body {
     background: #ffffff !important;
-    color: #000000 !important;
     font-size: 10.5pt;
   }
 
-  a {
-    text-decoration: none !important;
-    color: #000000 !important;
+  html:not([data-print-mode="visual"]) {
+    body {
+      color: #000000 !important;
+    }
+
+    a {
+      text-decoration: none !important;
+      color: #000000 !important;
+    }
+  }
+
+  html[data-print-mode="visual"] {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
   }
 }
