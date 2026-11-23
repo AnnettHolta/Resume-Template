@@ -2,6 +2,8 @@
 
 A minimalist, client-first **Resume Template & Editor** built with Next.js 16. Edit your resume inline, store a 512×512 WebP profile photo in IndexedDB, export/import JSON, print plain or visual PDFs, and optionally connect an AI assistant over **MCP (Model Context Protocol)** with zero server-side disk persistence.
 
+[Live demo](https://annettholta.github.io/Resume-Template/)
+
 ![Resume editor preview](assets/web-preview.webp)
 
 ---
