@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type {
   EducationItem,
   ExperienceItem,
@@ -45,6 +45,7 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [printMode, setPrintMode] = useState<PrintMode>("printer");
+  const pendingPrint = useRef(false);
 
   const activeEntries = entries.length > 0 ? entries : [initialData];
   const activeIndex = entries.length > 0 ? index : 0;
@@ -186,7 +187,12 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
         onConfirmPrint={(mode) => {
           setPrintMode(mode);
           document.documentElement.dataset.printMode = mode;
+          pendingPrint.current = true;
           setIsPrintModalOpen(false);
+        }}
+        onExit={() => {
+          if (!pendingPrint.current) return;
+          pendingPrint.current = false;
           requestAnimationFrame(() => {
             window.print();
           });

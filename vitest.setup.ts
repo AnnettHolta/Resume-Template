@@ -14,6 +14,14 @@ vi.mock("idb-keyval", () => ({
 }));
 
 if (typeof window !== "undefined") {
+  if (!HTMLDialogElement.prototype.showModal) {
+    HTMLDialogElement.prototype.showModal = function () {
+      this.open = true;
+    };
+    HTMLDialogElement.prototype.close = function () {
+      this.open = false;
+    };
+  }
   if (!window.requestAnimationFrame) {
     window.requestAnimationFrame = (cb: FrameRequestCallback) => {
       cb(0);

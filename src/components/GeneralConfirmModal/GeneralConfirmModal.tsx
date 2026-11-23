@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useId } from "react";
 import { AlertTriangle, X } from "lucide-react";
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { Modal } from "@/components/Modal/Modal";
 import styles from "./GeneralConfirmModal.module.scss";
 
 interface GeneralConfirmModalProps {
@@ -26,68 +26,59 @@ export function GeneralConfirmModal({
   onConfirm,
   onCancel,
 }: GeneralConfirmModalProps) {
-  useBodyScrollLock(isOpen);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, onCancel]);
-
-  if (!isOpen) return null;
+  const titleId = useId();
+  const descriptionId = useId();
 
   return (
-    <div
-      className={`${styles.backdrop} no-print`}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-modal-title"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onCancel();
-      }}
+    <Modal
+      isOpen={isOpen}
+      titleId={titleId}
+      descriptionId={descriptionId}
+      className={styles.dialog}
+      onClose={onCancel}
     >
-      <div className={styles.dialog}>
-        <div className={styles.header}>
-          <div className={styles.titleRow}>
-            {isDestructive && (
-              <span className={styles.warnIcon} aria-hidden="true">
-                <AlertTriangle size={16} />
-              </span>
-            )}
-            <h2 id="confirm-modal-title" className={styles.title}>
-              {title}
-            </h2>
-          </div>
-          <button
-            type="button"
-            className={styles.closeBtn}
-            onClick={onCancel}
-            aria-label="Close confirmation"
-          >
-            <X size={16} />
-          </button>
+      <div className={styles.header}>
+        <div className={styles.titleRow}>
+          {isDestructive && (
+            <span className={styles.warnIcon} aria-hidden="true">
+              <AlertTriangle size={16} />
+            </span>
+          )}
+          <h2 id={titleId} className={styles.title}>
+            {title}
+          </h2>
         </div>
-
-        <p className={styles.description}>{description}</p>
-
-        <div className={styles.footer}>
-          <button type="button" className={styles.cancelBtn} onClick={onCancel}>
-            {cancelLabel}
-          </button>
-          <button
-            type="button"
-            className={
-              isDestructive ? styles.destructiveBtn : styles.confirmBtn
-            }
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </button>
-        </div>
+        <button
+          type="button"
+          className={styles.closeBtn}
+          onClick={onCancel}
+          aria-label="Close confirmation"
+        >
+          <X size={16} />
+        </button>
       </div>
-    </div>
+
+      <p id={descriptionId} className={styles.description}>
+        {description}
+      </p>
+
+      <div className={styles.footer}>
+        <button
+          type="button"
+          className={styles.cancelBtn}
+          onClick={onCancel}
+          data-dialog-focus
+        >
+          {cancelLabel}
+        </button>
+        <button
+          type="button"
+          className={isDestructive ? styles.destructiveBtn : styles.confirmBtn}
+          onClick={onConfirm}
+        >
+          {confirmLabel}
+        </button>
+      </div>
+    </Modal>
   );
 }

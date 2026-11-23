@@ -1,27 +1,8 @@
 @use "@/styles/variables" as *;
 
-.backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgba(29, 29, 31, 0.24);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
 .dialog {
-  width: 100%;
   max-width: 480px;
-  background: $color-bg-sheet;
-  border: 1px solid $color-border-default;
-  border-radius: $radius-lg;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.14);
   padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
   gap: 1rem;
 }
 

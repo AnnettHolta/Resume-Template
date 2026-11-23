@@ -217,7 +217,10 @@ export function ExperienceCard({
             <button
               type="button"
               className={styles.iconBtn}
-              onClick={() => onDelete(item.id)}
+              onClick={(event) => {
+                event.currentTarget.focus();
+                onDelete(item.id);
+              }}
               aria-label="Delete experience"
               data-tooltip="Delete experience"
               data-tooltip-position="left"

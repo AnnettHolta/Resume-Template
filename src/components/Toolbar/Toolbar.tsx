@@ -11,6 +11,7 @@ import {
   Upload,
 } from "lucide-react";
 import { MAX_HISTORY_LENGTH } from "@/lib/resumeStorage";
+import { MobileActions } from "./MobileActions";
 import styles from "./Toolbar.module.scss";
 
 interface ToolbarProps {
@@ -125,10 +126,13 @@ export function Toolbar({
           </button>
           <button
             type="button"
-            className={`${styles.pillBtn} ${styles.mcpBtn} ${
+            className={`${styles.pillBtn} ${styles.hideOnMobile} ${
               isMcpConnected ? styles.mcpActiveBtn : ""
             }`}
-            onClick={onOpenMcp}
+            onClick={(event) => {
+              event.currentTarget.focus();
+              onOpenMcp();
+            }}
             data-tooltip={
               isMcpConnected ? "MCP connected" : "Configure optional MCP"
             }
@@ -139,8 +143,11 @@ export function Toolbar({
           </button>
           <button
             type="button"
-            className={`${styles.pillBtn} ${styles.resetBtn}`}
-            onClick={onReset}
+            className={`${styles.pillBtn} ${styles.resetBtn} ${styles.hideOnMobile}`}
+            onClick={(event) => {
+              event.currentTarget.focus();
+              onReset();
+            }}
             data-tooltip="Reset to initial JSON"
             data-tooltip-position="bot"
             aria-label="Reset"
@@ -151,7 +158,11 @@ export function Toolbar({
           <button
             type="button"
             className={styles.primaryBtn}
-            onClick={onPrint}
+            onClick={(event) => {
+              event.currentTarget.focus();
+              onPrint();
+            }}
+            aria-label="Print / PDF"
             data-tooltip="Print or Save as PDF"
             data-tooltip-position="bot"
           >
@@ -160,6 +171,13 @@ export function Toolbar({
               Print<span className={styles.hideBelowMd}> / PDF</span>
             </span>
           </button>
+          <MobileActions
+            isMcpConnected={isMcpConnected}
+            onImport={() => fileInputRef.current?.click()}
+            onSave={onDownloadJson}
+            onOpenMcp={onOpenMcp}
+            onReset={onReset}
+          />
         </div>
       </div>
     </nav>

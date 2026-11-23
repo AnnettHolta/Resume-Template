@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
 import { findSkillCatalogItem, SKILLS_CATALOG } from "@/data/skillsCatalog";
 import { SkillIcon } from "./SkillIcon";
-import styles from "./SkillsSection.module.scss";
+import styles from "./SkillAutocomplete.module.scss";
 
 interface SkillAutocompleteProps {
   existingSkills: Set<string>;

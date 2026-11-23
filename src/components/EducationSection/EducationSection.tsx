@@ -117,7 +117,10 @@ function EducationCard({ item, onCommit, onDelete }: EducationCardProps) {
         <button
           type="button"
           className={styles.iconBtn}
-          onClick={() => onDelete(item.id)}
+          onClick={(event) => {
+            event.currentTarget.focus();
+            onDelete(item.id);
+          }}
           aria-label="Delete education"
           data-tooltip="Delete education"
           data-tooltip-position="left"

@@ -59,7 +59,10 @@ export function AvatarPicker({ name }: AvatarPickerProps) {
           <button
             type="button"
             className={`${styles.removeButton} no-print`}
-            onClick={() => setIsConfirmOpen(true)}
+            onClick={(event) => {
+              event.currentTarget.focus();
+              setIsConfirmOpen(true);
+            }}
             disabled={isProcessing}
             aria-label="Remove profile picture"
           >

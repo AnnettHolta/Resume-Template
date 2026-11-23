@@ -1,27 +1,8 @@
 @use "@/styles/variables" as *;
 
-.backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgba(29, 29, 31, 0.24);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
 .dialog {
-  width: 100%;
   max-width: 500px;
-  background: $color-bg-sheet;
-  border: 1px solid $color-border-default;
-  border-radius: $radius-lg;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.14);
   padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
   gap: 1.15rem;
 }
 
@@ -55,11 +36,6 @@
   color: $color-text-primary;
 }
 
-.subtitle {
-  font-size: 0.75rem;
-  color: $color-text-secondary;
-}
-
 .closeBtn {
   width: 28px;
   height: 28px;
@@ -77,6 +53,17 @@
   }
 }
 
+.options {
+  min-width: 0;
+  border: 0;
+}
+
+.optionLegend {
+  margin-bottom: 0.55rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
 .optionsGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -88,6 +75,7 @@
 }
 
 .optionCard {
+  cursor: pointer;
   text-align: left;
   padding: 1rem;
   border-radius: $radius-md;
@@ -101,14 +89,18 @@
   &:hover {
     border-color: $color-text-muted;
   }
-}
+  &:has(input:checked) {
+    border-color: $color-accent-blue;
+    background: $color-accent-blue-soft;
 
-.optionCardSelected {
-  border-color: $color-accent-blue;
-  background: $color-accent-blue-soft;
+    .optionHeader {
+      color: $color-accent-blue;
+    }
+  }
 
-  .optionHeader {
-    color: $color-accent-blue;
+  &:has(input:focus-visible) {
+    outline: 2px solid $color-accent-blue;
+    outline-offset: 2px;
   }
 }
 
@@ -117,6 +109,11 @@
   align-items: center;
   gap: 0.45rem;
   color: $color-text-primary;
+
+  input {
+    margin-left: auto;
+    accent-color: $color-accent-blue;
+  }
 }
 
 .optionTitle {

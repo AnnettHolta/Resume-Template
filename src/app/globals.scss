@@ -49,6 +49,11 @@ button {
   cursor: pointer;
 }
 
+:where(button, a[href]):focus-visible {
+  outline: 2px solid $color-accent-blue;
+  outline-offset: 2px;
+}
+
 .no-print {
   @media print {
     display: none !important;

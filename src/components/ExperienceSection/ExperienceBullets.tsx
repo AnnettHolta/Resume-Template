@@ -100,7 +100,10 @@ export function ExperienceBullets({
             <button
               type="button"
               className={`${styles.removeBulletBtn} no-print`}
-              onClick={() => setPendingDeleteIndex(idx)}
+              onClick={(event) => {
+                event.currentTarget.focus();
+                setPendingDeleteIndex(idx);
+              }}
               aria-label="Remove bullet"
               data-tooltip="Remove point"
               data-tooltip-position="left"

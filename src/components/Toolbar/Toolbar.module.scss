@@ -157,6 +157,99 @@
   }
 }
 
+.mobileActions {
+  display: none;
+  position: relative;
+
+  @media (max-width: 640px) {
+    display: block;
+  }
+}
+
+.mobileTrigger {
+  padding: 0;
+  justify-content: center;
+}
+
+.mobilePanel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  width: min(13rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 5rem);
+  overflow: auto;
+  padding: 0.25rem;
+  background: $color-bg-sheet;
+  border: 1px solid $color-border-default;
+  border-radius: $radius-md;
+  box-shadow: $shadow-apple-card;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(0.97);
+  transform-origin: top right;
+  transition:
+    opacity 120ms $overlay-exit,
+    transform 120ms $overlay-exit,
+    visibility 0s linear 120ms;
+
+  &[aria-hidden="false"] {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+    transition:
+      opacity 160ms $overlay-enter,
+      transform 160ms $overlay-enter;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &,
+    &[aria-hidden="false"] {
+      transform: none;
+      transition: none;
+    }
+  }
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.45rem 0.75rem;
+    border: none;
+    border-radius: $radius-sm;
+    background: transparent;
+    text-align: left;
+    font-size: 0.875rem;
+
+    &:hover,
+    &:focus-visible {
+      background: $color-bg-subtle;
+    }
+
+    &.mobileConnected {
+      color: $color-accent-blue;
+    }
+
+    &.mobileDestructive {
+      border-top: 1px solid $color-border-subtle;
+      color: $color-danger;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .segBtn,
+  .primaryBtn,
+  .mobileTrigger {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+  }
+}
+
 .hideBelowLg {
   @media (max-width: 1023px) {
     display: none;

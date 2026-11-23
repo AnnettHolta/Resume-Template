@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useId, useState } from "react";
 import { KeyRound, RefreshCw, X } from "lucide-react";
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { GeneralConfirmModal } from "@/components/GeneralConfirmModal/GeneralConfirmModal";
+import { Modal } from "@/components/Modal/Modal";
 import { McpTokenPanel } from "./McpTokenPanel";
 import styles from "./McpModal.module.scss";
 
@@ -29,28 +29,14 @@ export function McpModal({
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useBodyScrollLock(isOpen);
+  const titleId = useId();
+  const descriptionId = useId();
 
   const handleClose = () => {
     setShowToken(false);
     setError(null);
     onClose();
   };
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !confirmRegenerate) {
-        setShowToken(false);
-        setError(null);
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, confirmRegenerate, onClose]);
-
-  if (!isOpen) return null;
 
   const callSessionEndpoint = async (regenerate = false) => {
     setIsLoading(true);
@@ -89,105 +75,102 @@ export function McpModal({
 
   return (
     <>
-      <div
-        className={`${styles.backdrop} no-print`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="mcp-modal-title"
-        onMouseDown={(e) => {
-          if (e.target === e.currentTarget) handleClose();
-        }}
+      <Modal
+        isOpen={isOpen}
+        titleId={titleId}
+        descriptionId={descriptionId}
+        className={styles.dialog}
+        onClose={handleClose}
       >
-        <div className={styles.dialog}>
-          <div className={styles.header}>
-            <div className={styles.titleRow}>
-              <span className={styles.iconBadge} aria-hidden="true">
-                <KeyRound size={16} />
-              </span>
-              <div>
-                <h2 id="mcp-modal-title" className={styles.title}>
-                  MCP Connection
-                </h2>
-                <p className={styles.subtitle}>
-                  Optional · Runtime-only in-memory session
-                </p>
-              </div>
+        <div className={styles.header}>
+          <div className={styles.titleRow}>
+            <span className={styles.iconBadge} aria-hidden="true">
+              <KeyRound size={16} />
+            </span>
+            <div>
+              <h2 id={titleId} className={styles.title}>
+                MCP Connection
+              </h2>
+              <p className={styles.subtitle}>
+                Optional · Runtime-only in-memory session
+              </p>
             </div>
-            <button
-              type="button"
-              className={styles.closeBtn}
-              onClick={handleClose}
-              aria-label="Close MCP modal"
-            >
-              <X size={16} />
-            </button>
           </div>
+          <button
+            type="button"
+            className={styles.closeBtn}
+            onClick={handleClose}
+            aria-label="Close MCP modal"
+            data-dialog-focus
+          >
+            <X size={16} />
+          </button>
+        </div>
 
-          <p className={styles.description}>
-            Connect an AI agent (Claude Code, Cursor, Antigravity, Codex) to
-            read and edit this resume while the editor is open. Changes go
-            through the editor’s undo history and save on this device.
-          </p>
+        <p id={descriptionId} className={styles.description}>
+          Connect an AI agent (Claude Code, Cursor, Antigravity, Codex) to read
+          and edit this resume while the editor is open. Changes go through the
+          editor’s undo history and save on this device.
+        </p>
 
-          {error && <p className={styles.errorText}>{error}</p>}
+        {error && <p className={styles.errorText}>{error}</p>}
 
-          {token && isSessionExpired && (
-            <div className={styles.expiredBox}>
-              <p className={styles.expiredText}>
-                Your session expired or the server restarted. Request a new
-                token to reconnect.
-              </p>
-              <div className={styles.expiredActions}>
-                <button
-                  type="button"
-                  className={styles.primaryInlineBtn}
-                  onClick={() => callSessionEndpoint(true)}
-                  disabled={isLoading}
-                >
-                  <RefreshCw size={14} />
-                  <span>Request New Token</span>
-                </button>
-              </div>
-            </div>
-          )}
-          {token && !isSessionExpired && !isEditorConnected && (
-            <p role="status">
-              Waiting for the editor connection. If another tab is connected,
-              close it to use this tab.
+        {token && isSessionExpired && (
+          <div className={styles.expiredBox}>
+            <p className={styles.expiredText}>
+              Your session expired or the server restarted. Request a new token
+              to reconnect.
             </p>
-          )}
-
-          {token ? (
-            <McpTokenPanel
-              token={token}
-              showToken={showToken}
-              isLoading={isLoading}
-              onToggleShow={() => setShowToken((prev) => !prev)}
-              onRequestRegenerate={() => setConfirmRegenerate(true)}
-              onDisconnect={handleDisconnect}
-              onError={setError}
-            />
-          ) : (
-            <div className={styles.emptyBox}>
-              <p className={styles.emptyHint}>
-                Request a token to let an agent read and edit this resume.
-              </p>
+            <div className={styles.expiredActions}>
               <button
                 type="button"
-                className={styles.primaryBtn}
-                onClick={() => callSessionEndpoint()}
+                className={styles.primaryInlineBtn}
+                onClick={() => callSessionEndpoint(true)}
                 disabled={isLoading}
               >
-                <KeyRound size={14} />
-                <span>{isLoading ? "Requesting..." : "Request Token"}</span>
+                <RefreshCw size={14} />
+                <span>Request New Token</span>
               </button>
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
+        {token && !isSessionExpired && !isEditorConnected && (
+          <p role="status">
+            Waiting for the editor connection. If another tab is connected,
+            close it to use this tab.
+          </p>
+        )}
+
+        {token ? (
+          <McpTokenPanel
+            token={token}
+            showToken={showToken}
+            isLoading={isLoading}
+            onToggleShow={() => setShowToken((prev) => !prev)}
+            onRequestRegenerate={() => setConfirmRegenerate(true)}
+            onDisconnect={handleDisconnect}
+            onError={setError}
+          />
+        ) : (
+          <div className={styles.emptyBox}>
+            <p className={styles.emptyHint}>
+              Request a token to let an agent read and edit this resume.
+            </p>
+            <button
+              type="button"
+              className={styles.primaryBtn}
+              onClick={() => callSessionEndpoint()}
+              disabled={isLoading}
+            >
+              <KeyRound size={14} />
+              <span>{isLoading ? "Requesting..." : "Request Token"}</span>
+            </button>
+          </div>
+        )}
+      </Modal>
 
       <GeneralConfirmModal
-        isOpen={confirmRegenerate}
+        isOpen={isOpen && confirmRegenerate}
         title="Regenerate MCP Token?"
         description="Your current token will be revoked immediately, and any connected AI agents will need the new token to continue syncing."
         confirmLabel="Regenerate"

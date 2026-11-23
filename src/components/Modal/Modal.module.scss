@@ -1,0 +1,64 @@
+@use "@/styles/variables" as *;
+
+.modal {
+  width: calc(100% - 2rem);
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: $color-bg-sheet;
+  border: 1px solid $color-border-default;
+  border-radius: $radius-lg;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.14);
+  color: $color-text-primary;
+  opacity: 0;
+  transform: scale(0.98);
+  transition:
+    opacity 150ms $overlay-exit,
+    transform 150ms $overlay-exit;
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &[data-visible] {
+    opacity: 1;
+    transform: none;
+    transition-timing-function: $overlay-enter;
+    transition-duration: 200ms;
+  }
+
+  & > * {
+    flex-shrink: 0;
+  }
+
+  &::backdrop {
+    background: rgba(29, 29, 31, 0.24);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 150ms $overlay-exit;
+  }
+
+  &[data-visible]::backdrop {
+    opacity: 1;
+    transition: opacity 200ms $overlay-enter;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &,
+    &[data-visible],
+    &::backdrop,
+    &[data-visible]::backdrop {
+      transform: none;
+      transition: none;
+    }
+  }
+
+  @media (pointer: coarse) {
+    button {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+}

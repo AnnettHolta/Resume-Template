@@ -1,17 +1,35 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useId, useState } from "react";
 import { FileText, LayoutGrid, Printer, X } from "lucide-react";
-import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
+import { Modal } from "@/components/Modal/Modal";
 import styles from "./PrintModal.module.scss";
 
 export type PrintMode = "printer" | "visual";
+
+const layouts = [
+  {
+    mode: "printer",
+    title: "Printer-Ready",
+    description:
+      "Flat, ink-friendly layout with black text, thin dividers, and a layout designed for ATS readability.",
+    Icon: FileText,
+  },
+  {
+    mode: "visual",
+    title: "Editor-Like View",
+    description:
+      "Preserves the editor’s rounded cards, subtle borders, and tinted skill pills.",
+    Icon: LayoutGrid,
+  },
+] as const;
 
 interface PrintModalProps {
   isOpen: boolean;
   initialMode: PrintMode;
   onConfirmPrint: (mode: PrintMode) => void;
   onClose: () => void;
+  onExit?: () => void;
 }
 
 export function PrintModal({
@@ -19,115 +37,94 @@ export function PrintModal({
   initialMode,
   onConfirmPrint,
   onClose,
+  onExit,
 }: PrintModalProps) {
+  const id = useId();
   const [selectedMode, setSelectedMode] = useState<PrintMode>(initialMode);
 
-  useBodyScrollLock(isOpen);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen) return null;
+  const finishExit = () => {
+    setSelectedMode(initialMode);
+    onExit?.();
+  };
 
   return (
-    <div
-      className={`${styles.backdrop} no-print`}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="print-modal-title"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
+    <Modal
+      isOpen={isOpen}
+      titleId={`${id}-title`}
+      className={styles.dialog}
+      onClose={onClose}
+      onExit={finishExit}
     >
-      <div className={styles.dialog}>
-        <div className={styles.header}>
-          <div className={styles.titleRow}>
-            <span className={styles.iconBadge} aria-hidden="true">
-              <Printer size={16} />
-            </span>
-            <div>
-              <h2 id="print-modal-title" className={styles.title}>
-                Print / Export PDF
-              </h2>
-              <p className={styles.subtitle}>
-                Choose how your resume should look when printed
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            className={styles.closeBtn}
-            onClick={onClose}
-            aria-label="Close print options"
-          >
-            <X size={16} />
-          </button>
+      <div className={styles.header}>
+        <div className={styles.titleRow}>
+          <span className={styles.iconBadge} aria-hidden="true">
+            <Printer size={16} />
+          </span>
+          <h2 id={`${id}-title`} className={styles.title}>
+            Print / Export PDF
+          </h2>
         </div>
-
-        <div
-          className={styles.optionsGrid}
-          role="radiogroup"
-          aria-label="Print layout"
+        <button
+          type="button"
+          className={styles.closeBtn}
+          onClick={onClose}
+          aria-label="Close print options"
         >
-          <button
-            type="button"
-            role="radio"
-            aria-checked={selectedMode === "printer"}
-            className={`${styles.optionCard} ${
-              selectedMode === "printer" ? styles.optionCardSelected : ""
-            }`}
-            onClick={() => setSelectedMode("printer")}
-          >
-            <div className={styles.optionHeader}>
-              <FileText size={18} />
-              <span className={styles.optionTitle}>Printer-Ready</span>
-            </div>
-            <p className={styles.optionDesc}>
-              Flat, ink-friendly layout with crisp black text, hairline
-              dividers, and a layout designed for ATS readability.
-            </p>
-          </button>
-
-          <button
-            type="button"
-            role="radio"
-            aria-checked={selectedMode === "visual"}
-            className={`${styles.optionCard} ${
-              selectedMode === "visual" ? styles.optionCardSelected : ""
-            }`}
-            onClick={() => setSelectedMode("visual")}
-          >
-            <div className={styles.optionHeader}>
-              <LayoutGrid size={18} />
-              <span className={styles.optionTitle}>Editor-Like View</span>
-            </div>
-            <p className={styles.optionDesc}>
-              Preserves rounded cards, subtle borders, tinted skill pills, and
-              the Apple HIG visual styling.
-            </p>
-          </button>
-        </div>
-
-        <div className={styles.footer}>
-          <button type="button" className={styles.cancelBtn} onClick={onClose}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className={styles.primaryBtn}
-            onClick={() => onConfirmPrint(selectedMode)}
-          >
-            <Printer size={14} />
-            <span>Print / Save PDF</span>
-          </button>
-        </div>
+          <X size={16} />
+        </button>
       </div>
-    </div>
+
+      <fieldset className={styles.options}>
+        <legend className={styles.optionLegend}>Print layout</legend>
+        <div className={styles.optionsGrid}>
+          {layouts.map(({ mode, title, description, Icon }) => {
+            const checked = selectedMode === mode;
+            return (
+              <label key={mode} className={styles.optionCard}>
+                <span className={styles.optionHeader}>
+                  <Icon size={18} aria-hidden="true" />
+                  <span
+                    id={`${id}-${mode}-title`}
+                    className={styles.optionTitle}
+                  >
+                    {title}
+                  </span>
+                  <input
+                    type="radio"
+                    name={`${id}-layout`}
+                    value={mode}
+                    checked={checked}
+                    onChange={() => setSelectedMode(mode)}
+                    aria-labelledby={`${id}-${mode}-title`}
+                    aria-describedby={`${id}-${mode}-description`}
+                    data-dialog-focus={checked ? "" : undefined}
+                  />
+                </span>
+                <span
+                  id={`${id}-${mode}-description`}
+                  className={styles.optionDesc}
+                >
+                  {description}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <div className={styles.footer}>
+        <button type="button" className={styles.cancelBtn} onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className={styles.primaryBtn}
+          onClick={() => onConfirmPrint(selectedMode)}
+        >
+          <Printer size={14} aria-hidden="true" />
+          <span>Print / Save PDF</span>
+        </button>
+      </div>
+    </Modal>
   );
 }

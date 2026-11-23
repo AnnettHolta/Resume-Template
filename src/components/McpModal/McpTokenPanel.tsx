@@ -113,7 +113,10 @@ export function McpTokenPanel({
         <button
           type="button"
           className={styles.secondaryBtn}
-          onClick={onRequestRegenerate}
+          onClick={(event) => {
+            event.currentTarget.focus();
+            onRequestRegenerate();
+          }}
           disabled={isLoading}
         >
           <RefreshCw size={14} />

@@ -11,13 +11,13 @@ A minimalist, client-first **Resume Template & Editor** built with Next.js 16. E
 - **Header & About:** Click **Edit** in the header to update your name, headline, contact info (location, email, phone, website, LinkedIn, GitHub), and professional summary. Changes commit on blur or when clicking **Done**.
 - **Profile Picture:** Click the circular avatar to upload an image. It is center-cropped and compressed in the browser to a **512×512 WebP `Blob` (80% quality)** and stored directly in IndexedDB. Hover/focus the avatar and click **×** to remove it (with confirmation).
 - **Experience & Education:** Add, edit, reorder, or delete entries and bullet points inline. Month/year badges use native month pickers (`YYYY-MM` or `Present`).
-- **Skills:** Add skills with autocomplete and automatic alias normalization (e.g., `css` → `CSS3`), drag-and-drop to reorder pills, or remove them.
+- **Skills:** Add skills with autocomplete and automatic alias normalization (e.g., `css` → `CSS3`), drag pills to reorder them, or use **Reorder skills** and the move buttons with a keyboard or touchscreen.
 
 ### 2. Local Persistence & History
 
 - Edits are managed in **Zustand** with a **50-step Undo / Redo** stack.
 - Manual and MCP edits share the same history and **IndexedDB** save queue. Writes use a **1-second debounce** and are flushed when the page goes into the background. The editor reports when a write succeeds and offers retry and JSON download if it fails.
-- **Import / Save / Reset:** Use the toolbar to **Import** a resume `.json` file, with field-level feedback for invalid data. **Save** exports the current resume as JSON. **Reset** (with confirmation) to restore the starter template and clear local IndexedDB + avatar storage.
+- **Import / Save / Reset:** Use the toolbar to **Import** a resume `.json` file, with field-level feedback for invalid data. **Save** exports the current resume as JSON. **Reset** restores the starter template and clears local history and the avatar after confirmation. On narrow screens, look in **More actions** for Import, Save, MCP, and Reset.
 
 ### 3. Print / PDF Export
 
