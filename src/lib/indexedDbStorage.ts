@@ -2,7 +2,7 @@ import { del, get, set } from "idb-keyval";
 import { debounce } from "lodash-es";
 import type { StateStorage } from "zustand/middleware";
 
-export const HISTORY_PERSIST_DEBOUNCE_MS = 6000;
+export const HISTORY_PERSIST_DEBOUNCE_MS = 1000;
 
 const debouncedSet = debounce((name: string, value: string) => {
   void set(name, value);

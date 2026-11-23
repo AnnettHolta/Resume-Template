@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import {
+  Cpu,
   Download,
   Printer,
   Redo2,
@@ -17,11 +18,13 @@ interface ToolbarProps {
   canRedo: boolean;
   historyPosition: number;
   historyTotal: number;
+  isMcpConnected: boolean;
   onUndo: () => void;
   onRedo: () => void;
   onDownloadJson: () => void;
   onImportJson: (file: File) => void;
   onReset: () => void;
+  onOpenMcp: () => void;
   onPrint: () => void;
 }
 
@@ -30,11 +33,13 @@ export function Toolbar({
   canRedo,
   historyPosition,
   historyTotal,
+  isMcpConnected,
   onUndo,
   onRedo,
   onDownloadJson,
   onImportJson,
   onReset,
+  onOpenMcp,
   onPrint,
 }: ToolbarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -112,6 +117,20 @@ export function Toolbar({
           >
             <Download size={14} className={styles.mutedIcon} />
             <span>Download JSON</span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.pillBtn} ${
+              isMcpConnected ? styles.mcpActiveBtn : ""
+            }`}
+            onClick={onOpenMcp}
+            data-tooltip={
+              isMcpConnected ? "MCP connected" : "Configure optional MCP"
+            }
+            data-tooltip-position="bot"
+          >
+            <Cpu size={14} className={styles.mutedIcon} />
+            <span>MCP</span>
           </button>
           <button
             type="button"

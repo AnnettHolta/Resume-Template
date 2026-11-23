@@ -103,6 +103,16 @@
   color: $color-text-secondary;
 }
 
+.mcpActiveBtn {
+  border-color: $color-accent-blue;
+  color: $color-accent-blue;
+  background: $color-accent-blue-soft;
+
+  .mutedIcon {
+    color: $color-accent-blue;
+  }
+}
+
 .resetBtn {
   color: $color-text-secondary;
 
