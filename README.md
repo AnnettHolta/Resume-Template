@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Resume Template & Editor
+
+A minimalist, client-first **Resume Template & Editor** built with Next.js 16. Edit your resume inline, store a 512×512 WebP profile photo in IndexedDB, export/import JSON, print ATS-friendly or visual PDFs, and optionally connect an AI assistant over **MCP (Model Context Protocol)** with zero server-side disk persistence.
+
+---
+
+## Features & How to Use
+
+### 1. Inline Editing
+
+- **Header & About:** Click **Edit** in the header to update your name, headline, contact info (location, email, phone, website, LinkedIn, GitHub), and professional summary. Changes commit on blur or when clicking **Done**.
+- **Profile Picture:** Click the circular avatar to upload an image. It is center-cropped and compressed in the browser to a **512×512 WebP `Blob` (80% quality)** and stored directly in IndexedDB. Hover/focus the avatar and click **×** to remove it (with confirmation).
+- **Experience & Education:** Add, edit, reorder, or delete entries and bullet points inline. Month/year badges use native month pickers (`YYYY-MM` or `Present`).
+- **Skills:** Add skills with autocomplete and automatic alias normalization (e.g., `css` → `CSS3`), drag-and-drop to reorder pills, or remove them.
+
+### 2. Local Persistence & History
+
+- Edits are managed in **Zustand** with a **50-step Undo / Redo** stack.
+- History is automatically saved to **IndexedDB** (`idb-keyval`) with a **1-second debounce** and flushed on `pagehide` / `visibilitychange`.
+- **Import / Save / Reset:** Use the toolbar to **Import** a resume `.json` file, **Save** the current resume as JSON, or **Reset** (with confirmation) to restore the starter template and clear local IndexedDB + avatar storage.
+
+### 3. Print / PDF Export
+
+Click **Print / PDF** in the toolbar to choose between two print modes:
+
+- **Printer-Ready:** Flat, high-contrast, ATS-friendly layout with empty fields/sections and editor controls hidden.
+- **Editor-Like View:** Preserves the on-screen card styling, pills, and visual accents (`html[data-print-mode="visual"]`).
+
+---
+
+## Tech Stack
+
+| Layer             | Technology                                                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Framework         | Next.js 16 (App Router, Turbopack, Cache Components), React 19, TypeScript 5                                      |
+| Styling           | SCSS Modules, `lucide-react`                                                                                      |
+| State & Storage   | Zustand, `idb-keyval` (IndexedDB), `lodash-es`                                                                    |
+| API & Docs        | Hono (`@hono/zod-openapi`), Zod (payload validation & OpenAPI schemas), Scalar (`/api/docs`, `/api/openapi.json`) |
+| MCP Server        | `@modelcontextprotocol/sdk`, Zod                                                                                  |
+| Quality & Testing | Vitest, Testing Library, ESLint, Prettier, Husky (`pre-commit`)                                                   |
+
+---
+
+## MCP Connection (Optional AI Integration)
+
+You can let an MCP-compatible AI client read and update your resume live in the browser:
+
+1. Click **MCP** in the toolbar to start an ephemeral session.
+2. Reveal/copy your session bearer token and the MCP endpoint URL:
+   ```text
+   POST http://localhost:3000/api/mcp
+   Authorization: Bearer <your-session-token>
+   ```
+3. All edits made by the AI agent stream back to the editor in real time over **SSE** (`/api/resume/events`), and edits you make in the UI sync to the session.
+
+### Security & Privacy
+
+- Sessions are stored **in server RAM only** with a **4-hour sliding TTL** and zero disk persistence.
+- The token is never written to `resume.json` or IndexedDB.
+- You can disconnect/revoke the session at any time from the MCP modal.
+
+### Available MCP Tools
+
+- `get_resume` — Read the current session resume JSON.
+- `update_profile` — Update `name`, `headline`, `summary`, and `contact` fields.
+- `upsert_experience` / `delete_experience` — Add, update, or delete experience entries by `id`.
+- `upsert_education` / `delete_education` — Add, update, or delete education entries by `id`.
+- `add_skills` / `remove_skills` — Add skills (auto-resolving catalog aliases) or remove skills by name.
+
+### API Endpoints
+
+- `POST /api/session` / `DELETE /api/session` — Create or disconnect an MCP session.
+- `GET /api/resume` / `PUT /api/resume` — Read or sync session resume JSON.
+- `GET /api/resume/events` — Server-Sent Events stream for live MCP updates.
+- `POST /api/mcp` — Streamable HTTP MCP endpoint.
+- `GET /api/openapi.json` & `GET /api/docs` — OpenAPI 3.1 spec and Scalar API reference.
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Local Development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `npm run dev` — Start the Next.js development server.
+- `npm run build` — Create a standalone production build.
+- `npm run start` — Start the production server.
+- `npm run check` — Run `format:check`, `lint`, `test`, and `build` (also enforced by Husky `pre-commit`).
+- `npm run lint` — Run ESLint and the `<250` code-lines check (`scripts/check-file-lines.mjs`).
+- `npm run test` — Run Vitest test suites.
+- `npm run format` — Format all files with Prettier.
 
-## Learn More
+### Docker
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+docker compose up --build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The app will be available at [http://localhost:3000](http://localhost:3000).
