@@ -274,7 +274,7 @@ export function ExperienceCard({
                   resizeTextarea(el);
                 }}
                 rows={1}
-                className={styles.bulletInput}
+                className={`${styles.bulletInput} no-print`}
                 value={bullet}
                 onChange={(e) => {
                   updateBullet(idx, e.target.value);
@@ -297,6 +297,7 @@ export function ExperienceCard({
                 placeholder="Describe an achievement or responsibility..."
                 aria-label={`Experience highlight ${idx + 1}`}
               />
+              <span className={styles.bulletPrintText}>{bullet}</span>
               <button
                 type="button"
                 className={`${styles.removeBulletBtn} no-print`}

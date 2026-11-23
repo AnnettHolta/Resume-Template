@@ -267,18 +267,19 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
             <span>{isEditing ? "Done" : "Edit"}</span>
           </button>
         </div>
-      </div>
 
-      <section
-        className={`${styles.aboutSection} ${
-          !isEditing && !profile.summary.trim() ? "no-print" : ""
-        }`}
-        aria-labelledby="about-heading"
-      >
-        <h2 id="about-heading" className={styles.sectionTitle}>
-          About
-        </h2>
-        <div className={styles.aboutBox}>
+        <section
+          className={`${styles.aboutSection} ${
+            !isEditing && !profile.summary.trim() ? "no-print" : ""
+          }`}
+          aria-labelledby="about-heading"
+        >
+          <div className={styles.aboutDivider}>
+            <h2 id="about-heading" className={styles.sectionTitle}>
+              About
+            </h2>
+            <span className={styles.dividerLine} aria-hidden="true" />
+          </div>
           {isEditing ? (
             <textarea
               className={styles.summaryInput}
@@ -293,8 +294,8 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
           ) : (
             <p className={styles.summaryText}>{profile.summary}</p>
           )}
-        </div>
-      </section>
+        </section>
+      </div>
     </header>
   );
 }

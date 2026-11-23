@@ -219,6 +219,11 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+
+  @media print {
+    margin-top: 0.45rem;
+    gap: 0.18rem;
+  }
 }
 
 .bulletItem {
@@ -250,6 +255,10 @@
   line-height: 1.55;
   color: $color-text-primary;
   user-select: none;
+
+  @media print {
+    line-height: 1.4;
+  }
 }
 
 .bulletInput {
@@ -271,12 +280,19 @@
     border-color: $color-accent-blue;
     color: $color-text-primary;
   }
+}
+
+.bulletPrintText {
+  display: none;
 
   @media print {
-    border-color: transparent !important;
-    background: transparent !important;
-    padding: 0;
-    color: #000000 !important;
+    display: block;
+    flex: 1;
+    min-width: 0;
+    font-size: 0.84375rem;
+    line-height: 1.45;
+    color: #000000;
+    white-space: pre-wrap;
   }
 }
 
