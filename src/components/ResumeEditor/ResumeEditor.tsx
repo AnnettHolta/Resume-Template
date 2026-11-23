@@ -68,8 +68,8 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
   const [isMcpModalOpen, setIsMcpModalOpen] = useState(false);
   const skipNextRemoteSyncRef = useRef(false);
 
-  const activeEntries = hasHydrated && entries.length > 0 ? entries : [initialData];
-  const activeIndex = hasHydrated && entries.length > 0 ? index : 0;
+  const activeEntries = entries.length > 0 ? entries : [initialData];
+  const activeIndex = entries.length > 0 ? index : 0;
   const currentResume = activeEntries[activeIndex] ?? initialData;
 
   const debouncedServerSync = useMemo(
