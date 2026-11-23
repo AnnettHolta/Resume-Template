@@ -17,7 +17,7 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [pendingDeleteSkill, setPendingDeleteSkill] = useState<string | null>(
-    null
+    null,
   );
   const [animatedSkills, setAnimatedSkills] = useState<Set<string>>(
     () => new Set(),

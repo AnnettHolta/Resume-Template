@@ -38,29 +38,6 @@
   }
 }
 
-.avatar {
-  flex-shrink: 0;
-  width: 88px;
-  height: 88px;
-  border-radius: 50%;
-  background: $color-bg-subtle;
-  border: 1px solid $color-border-default;
-  color: $color-text-secondary;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  @media print {
-    :global(html:not([data-print-mode="visual"])) & {
-      width: 60px;
-      height: 60px;
-      background: #ffffff;
-      border-color: #000000;
-      color: #000000;
-    }
-  }
-}
-
 .identity {
   flex: 1;
   min-width: 0;

@@ -10,9 +10,9 @@ import {
   MapPin,
   Pencil,
   Phone,
-  User,
 } from "lucide-react";
 import type { ResumeProfile } from "@/types/resume";
+import { AvatarPicker } from "./AvatarPicker";
 import { ResumeHeaderForm } from "./ResumeHeaderForm";
 import styles from "./ResumeHeader.module.scss";
 
@@ -40,9 +40,7 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
       <div className={styles.profileHeader}>
         <div className={styles.topRow}>
           <div className={styles.identityRow}>
-            <div className={styles.avatar} aria-hidden="true">
-              <User size={40} strokeWidth={1.25} />
-            </div>
+            <AvatarPicker name={profile.name} />
 
             <div className={styles.identity}>
               {isEditing ? (

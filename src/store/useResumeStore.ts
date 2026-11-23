@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { deleteAvatarBlob } from "@/lib/avatarStorage";
 import {
   cancelIndexedDbWrites,
   debouncedIndexedDbStorage,
@@ -81,6 +82,7 @@ export const useResumeStore = create<ResumeStoreState>()(
       reset: (initialData) => {
         cancelIndexedDbWrites();
         void debouncedIndexedDbStorage.removeItem(RESUME_STORE_KEY);
+        void deleteAvatarBlob();
         set({
           entries: [initialData],
           index: 0,
