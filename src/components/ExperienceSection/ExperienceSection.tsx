@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Plus } from "lucide-react";
 import type { ExperienceItem } from "@/types/resume";
+import { GeneralConfirmModal } from "@/components/GeneralConfirmModal/GeneralConfirmModal";
 import { ExperienceCard } from "./ExperienceCard";
 import styles from "./ExperienceSection.module.scss";
 
@@ -11,13 +13,17 @@ interface ExperienceSectionProps {
 }
 
 export function ExperienceSection({ items, onChange }: ExperienceSectionProps) {
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
   const handleCommitItem = (updated: ExperienceItem) => {
     const next = items.map((item) => (item.id === updated.id ? updated : item));
     onChange(next);
   };
 
-  const handleDeleteItem = (id: string) => {
-    onChange(items.filter((item) => item.id !== id));
+  const handleConfirmDelete = () => {
+    if (!pendingDeleteId) return;
+    onChange(items.filter((item) => item.id !== pendingDeleteId));
+    setPendingDeleteId(null);
   };
 
   const handleAddItem = () => {
@@ -63,11 +69,22 @@ export function ExperienceSection({ items, onChange }: ExperienceSectionProps) {
               key={item.id}
               item={item}
               onCommit={handleCommitItem}
-              onDelete={handleDeleteItem}
+              onDelete={setPendingDeleteId}
             />
           ))}
         </div>
       )}
+
+      <GeneralConfirmModal
+        isOpen={pendingDeleteId !== null}
+        title="Delete Experience?"
+        description="Are you sure you want to remove this experience entry?"
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDestructive
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </section>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { AlertTriangle, X } from "lucide-react";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import styles from "./GeneralConfirmModal.module.scss";
 
 interface GeneralConfirmModalProps {
@@ -25,6 +26,8 @@ export function GeneralConfirmModal({
   onConfirm,
   onCancel,
 }: GeneralConfirmModalProps) {
+  useBodyScrollLock(isOpen);
+
   useEffect(() => {
     if (!isOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {

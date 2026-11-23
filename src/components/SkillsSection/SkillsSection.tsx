@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { findSkillCatalogItem } from "@/data/skillsCatalog";
+import { GeneralConfirmModal } from "@/components/GeneralConfirmModal/GeneralConfirmModal";
 import { SkillAutocomplete } from "./SkillAutocomplete";
 import { SkillIcon } from "./SkillIcon";
 import styles from "./SkillsSection.module.scss";
@@ -15,6 +16,9 @@ interface SkillsSectionProps {
 export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [pendingDeleteSkill, setPendingDeleteSkill] = useState<string | null>(
+    null
+  );
   const [animatedSkills, setAnimatedSkills] = useState<Set<string>>(
     () => new Set(),
   );
@@ -114,7 +118,7 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
               <button
                 type="button"
                 className={`${styles.removeBtn} no-print`}
-                onClick={() => handleRemoveSkill(skill)}
+                onClick={() => setPendingDeleteSkill(skill)}
                 aria-label={`remove ${lowercaseSkill}`}
               >
                 <X size={12} />
@@ -127,6 +131,22 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
       <SkillAutocomplete
         existingSkills={normalizedExisting}
         onAddSkill={handleAddSkill}
+      />
+
+      <GeneralConfirmModal
+        isOpen={pendingDeleteSkill !== null}
+        title="Remove Skill?"
+        description={`Are you sure you want to remove "${pendingDeleteSkill ?? ""}" from your skills?`}
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        isDestructive
+        onCancel={() => setPendingDeleteSkill(null)}
+        onConfirm={() => {
+          if (pendingDeleteSkill) {
+            handleRemoveSkill(pendingDeleteSkill);
+          }
+          setPendingDeleteSkill(null);
+        }}
       />
     </section>
   );

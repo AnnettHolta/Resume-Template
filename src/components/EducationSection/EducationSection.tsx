@@ -4,6 +4,7 @@ import { useState } from "react";
 import { GraduationCap, Plus, Trash2 } from "lucide-react";
 import type { EducationItem } from "@/types/resume";
 import { DatePickerBadge } from "@/components/DatePickerBadge/DatePickerBadge";
+import { GeneralConfirmModal } from "@/components/GeneralConfirmModal/GeneralConfirmModal";
 import styles from "./EducationSection.module.scss";
 
 interface EducationCardProps {
@@ -125,12 +126,16 @@ interface EducationSectionProps {
 }
 
 export function EducationSection({ items, onChange }: EducationSectionProps) {
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
   const handleCommitItem = (updated: EducationItem) => {
     onChange(items.map((item) => (item.id === updated.id ? updated : item)));
   };
 
-  const handleDeleteItem = (id: string) => {
-    onChange(items.filter((item) => item.id !== id));
+  const handleConfirmDelete = () => {
+    if (!pendingDeleteId) return;
+    onChange(items.filter((item) => item.id !== pendingDeleteId));
+    setPendingDeleteId(null);
   };
 
   const handleAddItem = () => {
@@ -173,11 +178,22 @@ export function EducationSection({ items, onChange }: EducationSectionProps) {
               key={item.id}
               item={item}
               onCommit={handleCommitItem}
-              onDelete={handleDeleteItem}
+              onDelete={setPendingDeleteId}
             />
           ))}
         </div>
       )}
+
+      <GeneralConfirmModal
+        isOpen={pendingDeleteId !== null}
+        title="Delete Education?"
+        description="Are you sure you want to remove this education entry?"
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDestructive
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </section>
   );
 }

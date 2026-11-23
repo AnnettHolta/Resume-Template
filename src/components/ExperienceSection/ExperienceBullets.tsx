@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
+import { GeneralConfirmModal } from "@/components/GeneralConfirmModal/GeneralConfirmModal";
 import styles from "./ExperienceBullets.module.scss";
 
 interface ExperienceBulletsProps {
@@ -18,6 +19,9 @@ export function ExperienceBullets({
   onBlurCommit,
 }: ExperienceBulletsProps) {
   const bulletRefs = useRef<Array<HTMLTextAreaElement | null>>([]);
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(
+    null,
+  );
 
   const resizeTextarea = (el: HTMLTextAreaElement | null) => {
     if (!el) return;
@@ -96,7 +100,7 @@ export function ExperienceBullets({
             <button
               type="button"
               className={`${styles.removeBulletBtn} no-print`}
-              onClick={() => removeBulletAt(idx)}
+              onClick={() => setPendingDeleteIndex(idx)}
               aria-label="Remove bullet"
               data-tooltip="Remove point"
               data-tooltip-position="left"
@@ -115,6 +119,22 @@ export function ExperienceBullets({
         <Plus size={13} />
         <span>Add point</span>
       </button>
+
+      <GeneralConfirmModal
+        isOpen={pendingDeleteIndex !== null}
+        title="Delete Bullet Point?"
+        description="Are you sure you want to remove this highlight?"
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDestructive
+        onCancel={() => setPendingDeleteIndex(null)}
+        onConfirm={() => {
+          if (pendingDeleteIndex !== null) {
+            removeBulletAt(pendingDeleteIndex);
+          }
+          setPendingDeleteIndex(null);
+        }}
+      />
     </>
   );
 }

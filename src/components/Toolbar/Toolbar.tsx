@@ -59,7 +59,7 @@ export function Toolbar({
               aria-label="Undo"
             >
               <Undo2 size={14} />
-              <span>Undo</span>
+              <span className={styles.hideBelowLg}>Undo</span>
             </button>
             <button
               type="button"
@@ -71,7 +71,7 @@ export function Toolbar({
               aria-label="Redo"
             >
               <Redo2 size={14} />
-              <span>Redo</span>
+              <span className={styles.hideBelowLg}>Redo</span>
             </button>
           </div>
           <span
@@ -79,8 +79,9 @@ export function Toolbar({
             data-tooltip="Saved history snapshots"
             data-tooltip-position="bot"
           >
-            History {historyPosition}/{historyTotal}{" "}
-            <span className={styles.historyMax}>
+            <span className={styles.hideBelowLg}>History </span>
+            {historyPosition}/{historyTotal}{" "}
+            <span className={`${styles.historyMax} ${styles.hideBelowLg}`}>
               (max {MAX_HISTORY_LENGTH})
             </span>
           </span>
@@ -106,23 +107,25 @@ export function Toolbar({
             onClick={() => fileInputRef.current?.click()}
             data-tooltip="Import JSON"
             data-tooltip-position="bot"
+            aria-label="Import JSON"
           >
             <Upload size={14} className={styles.mutedIcon} />
-            <span>Import JSON</span>
+            <span className={styles.hideBelowMd}>Import</span>
           </button>
           <button
             type="button"
             className={`${styles.pillBtn} ${styles.hideOnMobile}`}
             onClick={onDownloadJson}
-            data-tooltip="Download JSON"
+            data-tooltip="Save JSON"
             data-tooltip-position="bot"
+            aria-label="Save JSON"
           >
             <Download size={14} className={styles.mutedIcon} />
-            <span>Download JSON</span>
+            <span className={styles.hideBelowMd}>Save</span>
           </button>
           <button
             type="button"
-            className={`${styles.pillBtn} ${
+            className={`${styles.pillBtn} ${styles.mcpBtn} ${
               isMcpConnected ? styles.mcpActiveBtn : ""
             }`}
             onClick={onOpenMcp}
@@ -140,9 +143,10 @@ export function Toolbar({
             onClick={onReset}
             data-tooltip="Reset to initial JSON"
             data-tooltip-position="bot"
+            aria-label="Reset"
           >
             <RotateCcw size={14} />
-            <span>Reset</span>
+            <span className={styles.hideBelowMd}>Reset</span>
           </button>
           <button
             type="button"
@@ -152,7 +156,9 @@ export function Toolbar({
             data-tooltip-position="bot"
           >
             <Printer size={14} />
-            <span>Print / PDF</span>
+            <span>
+              Print<span className={styles.hideBelowMd}> / PDF</span>
+            </span>
           </button>
         </div>
       </div>

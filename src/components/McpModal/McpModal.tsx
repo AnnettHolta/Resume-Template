@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { KeyRound, RefreshCw, RotateCcw, X } from "lucide-react";
 import type { ResumeData } from "@/types/resume";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import { GeneralConfirmModal } from "@/components/GeneralConfirmModal/GeneralConfirmModal";
 import { McpTokenPanel } from "./McpTokenPanel";
 import styles from "./McpModal.module.scss";
@@ -30,6 +31,8 @@ export function McpModal({
   const [isLoading, setIsLoading] = useState(false);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useBodyScrollLock(isOpen);
 
   const handleClose = () => {
     setShowToken(false);

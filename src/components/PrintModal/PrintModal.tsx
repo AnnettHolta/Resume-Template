@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { FileText, LayoutGrid, Printer, X } from "lucide-react";
+import { useBodyScrollLock } from "@/hooks/useBodyScrollLock";
 import styles from "./PrintModal.module.scss";
 
 export type PrintMode = "printer" | "visual";
@@ -20,6 +21,8 @@ export function PrintModal({
   onClose,
 }: PrintModalProps) {
   const [selectedMode, setSelectedMode] = useState<PrintMode>(initialMode);
+
+  useBodyScrollLock(isOpen);
 
   useEffect(() => {
     if (!isOpen) return;

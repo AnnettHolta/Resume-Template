@@ -15,6 +15,7 @@ import { ResumeHeader } from "@/components/ResumeHeader/ResumeHeader";
 import { ExperienceSection } from "@/components/ExperienceSection/ExperienceSection";
 import { EducationSection } from "@/components/EducationSection/EducationSection";
 import { SkillsSection } from "@/components/SkillsSection/SkillsSection";
+import { GeneralConfirmModal } from "@/components/GeneralConfirmModal/GeneralConfirmModal";
 import { McpModal } from "@/components/McpModal/McpModal";
 import { PrintModal, type PrintMode } from "@/components/PrintModal/PrintModal";
 import styles from "./ResumeEditor.module.scss";
@@ -36,6 +37,7 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
 
   const [isMcpModalOpen, setIsMcpModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [printMode, setPrintMode] = useState<PrintMode>("printer");
 
   const activeEntries = entries.length > 0 ? entries : [initialData];
@@ -98,7 +100,7 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
         onRedo={redo}
         onDownloadJson={() => downloadResumeJson(currentResume)}
         onImportJson={handleImportJson}
-        onReset={() => reset(initialData)}
+        onReset={() => setIsResetConfirmOpen(true)}
         onOpenMcp={() => setIsMcpModalOpen(true)}
         onPrint={() => setIsPrintModalOpen(true)}
       />
@@ -152,6 +154,20 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
           requestAnimationFrame(() => {
             window.print();
           });
+        }}
+      />
+
+      <GeneralConfirmModal
+        isOpen={isResetConfirmOpen}
+        title="Reset Resume?"
+        description="This will clear your local edits and undo history, restoring the initial resume template."
+        confirmLabel="Reset"
+        cancelLabel="Cancel"
+        isDestructive
+        onCancel={() => setIsResetConfirmOpen(false)}
+        onConfirm={() => {
+          setIsResetConfirmOpen(false);
+          reset(initialData);
         }}
       />
     </div>
