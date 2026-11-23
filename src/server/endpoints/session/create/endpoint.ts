@@ -48,7 +48,9 @@ export function registerCreateSessionEndpoint(app: OpenAPIHono) {
     const parsed = CreateSessionRequestSchema.safeParse(body);
     const regenerate = parsed.success ? parsed.data.regenerate : false;
     const revalidate = parsed.success ? parsed.data.revalidate : false;
-    const initialResume = parsed.success ? parsed.data.initialResume : undefined;
+    const initialResume = parsed.success
+      ? parsed.data.initialResume
+      : undefined;
 
     const existingToken = extractMcpToken(c.req.raw.headers);
 

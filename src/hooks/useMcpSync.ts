@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { debounce } from "lodash-es";
 import {
   flushIndexedDbWrites,
@@ -48,7 +54,7 @@ export function useMcpSync({
   const mcpToken = useSyncExternalStore(
     subscribeMcpCookie,
     readMcpCookie,
-    () => null
+    () => null,
   );
   const [isMcpExpired, setIsMcpExpired] = useState(false);
   const [mcpSessionNonce, setMcpSessionNonce] = useState(0);
@@ -71,7 +77,7 @@ export function useMcpSync({
           // Ignore transient network errors
         }
       }, HISTORY_PERSIST_DEBOUNCE_MS),
-    [setStatusMessage]
+    [setStatusMessage],
   );
 
   useEffect(() => {
@@ -193,4 +199,3 @@ export function useMcpSync({
     },
   };
 }
-

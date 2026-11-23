@@ -8,9 +8,11 @@
     "start": "next start",
     "lint": "eslint && node scripts/check-file-lines.mjs",
     "lint:lines": "node scripts/check-file-lines.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run lint && npm run test && npm run build"
+    "check": "npm run format:check && npm run lint && npm run test && npm run build"
   },
   "dependencies": {
     "@hono/zod-openapi": "^1.6.3",
@@ -36,7 +38,9 @@
     "@vitejs/plugin-react": "^6.3.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
+    "eslint-config-prettier": "^10.1.8",
     "jsdom": "^31.0.1",
+    "prettier": "^3.10.1",
     "sass": "^1.108.2",
     "typescript": "^5",
     "vitest": "^5.1.1"

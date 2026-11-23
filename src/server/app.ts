@@ -31,6 +31,5 @@ apiApp.get(
   Scalar({
     url: "/api/openapi.json",
     pageTitle: "Resume Template API Reference",
-  })
+  }),
 );
-

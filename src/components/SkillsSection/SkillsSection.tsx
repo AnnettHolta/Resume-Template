@@ -16,12 +16,12 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [animatedSkills, setAnimatedSkills] = useState<Set<string>>(
-    () => new Set()
+    () => new Set(),
   );
 
   const normalizedExisting = useMemo(
     () => new Set(skills.map((s) => s.trim().toLowerCase())),
-    [skills]
+    [skills],
   );
 
   const handleAddSkill = (resolvedSkill: string) => {

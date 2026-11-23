@@ -21,7 +21,7 @@ export function hashMcpToken(token: string): string {
 
 export function parseCookieValue(
   cookieHeader: string | null | undefined,
-  name: string
+  name: string,
 ): string | null {
   if (!cookieHeader) return null;
   const parts = cookieHeader.split(";");

@@ -78,4 +78,3 @@ describe("Hono REPR API & MCP session security", () => {
     expect(afterDisconnect.status).toBe(401);
   });
 });
-

@@ -25,10 +25,10 @@ describe("skillsCatalog", () => {
     expect(findSkillCatalogItem("Hono")?.category).toBe("Backend");
     expect(findSkillCatalogItem("Fastify")?.category).toBe("Backend");
     expect(findSkillCatalogItem("Discord")?.iconUrl).toBe(
-      "https://cdn.simpleicons.org/discord/5865F2"
+      "https://cdn.simpleicons.org/discord/5865F2",
     );
     expect(findSkillCatalogItem("OpenAI Codex")?.iconUrl).toContain(
-      "codex/codex-original.svg"
+      "codex/codex-original.svg",
     );
     expect(SKILLS_CATALOG.length).toBeGreaterThan(60);
   });
@@ -63,18 +63,17 @@ describe("tokenUtils", () => {
 
   it("detects HTTPS via x-forwarded-proto or URL", () => {
     expect(
-      isHttpsRequest(new Request("http://192.168.1.5:3000/api/session"))
+      isHttpsRequest(new Request("http://192.168.1.5:3000/api/session")),
     ).toBe(false);
     expect(
-      isHttpsRequest(new Request("https://resume.example.com/api/session"))
+      isHttpsRequest(new Request("https://resume.example.com/api/session")),
     ).toBe(true);
     expect(
       isHttpsRequest(
         new Request("http://internal/api/session", {
           headers: { "x-forwarded-proto": "https" },
-        })
-      )
+        }),
+      ),
     ).toBe(true);
   });
 });
-

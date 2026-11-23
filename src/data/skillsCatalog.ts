@@ -33,6 +33,8 @@ for (const item of SKILLS_CATALOG) {
   }
 }
 
-export function findSkillCatalogItem(name: string): SkillCatalogItem | undefined {
+export function findSkillCatalogItem(
+  name: string,
+): SkillCatalogItem | undefined {
   return CATALOG_MAP.get(name.trim().toLowerCase());
 }

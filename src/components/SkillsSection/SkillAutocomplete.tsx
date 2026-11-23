@@ -2,10 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Plus } from "lucide-react";
-import {
-  findSkillCatalogItem,
-  SKILLS_CATALOG,
-} from "@/data/skillsCatalog";
+import { findSkillCatalogItem, SKILLS_CATALOG } from "@/data/skillsCatalog";
 import { SkillIcon } from "./SkillIcon";
 import styles from "./SkillsSection.module.scss";
 
@@ -33,7 +30,7 @@ export function SkillAutocomplete({
       const lower = item.name.toLowerCase();
       if (existingSkills.has(lower)) continue;
       const aliasMatches = (item.aliases ?? []).some((alias) =>
-        alias.toLowerCase().includes(query)
+        alias.toLowerCase().includes(query),
       );
       if (lower.startsWith(query)) {
         startsWith.push(item);
@@ -78,7 +75,7 @@ export function SkillAutocomplete({
             } else if (e.key === "ArrowUp" && suggestions.length > 0) {
               e.preventDefault();
               setActiveIndex(
-                (prev) => (prev - 1 + suggestions.length) % suggestions.length
+                (prev) => (prev - 1 + suggestions.length) % suggestions.length,
               );
             } else if (e.key === "Escape") {
               setIsFocused(false);
@@ -146,4 +143,3 @@ export function SkillAutocomplete({
     </div>
   );
 }
-

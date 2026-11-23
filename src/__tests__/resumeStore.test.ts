@@ -50,7 +50,7 @@ describe("useResumeStore & debouncedIndexedDbStorage", () => {
     expect(useResumeStore.getState().index).toBe(1);
     expect(
       useResumeStore.getState().entries[useResumeStore.getState().index].profile
-        .name
+        .name,
     ).toBe("Jane Doe");
 
     store.redo();
@@ -71,7 +71,7 @@ describe("useResumeStore & debouncedIndexedDbStorage", () => {
           ...base,
           profile: { ...base.profile, name: `User ${i}` },
         },
-        base
+        base,
       );
     }
 
@@ -102,4 +102,3 @@ describe("useResumeStore & debouncedIndexedDbStorage", () => {
     expect(setMock).toHaveBeenLastCalledWith("test-key", '{"a":3}');
   });
 });
-

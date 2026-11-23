@@ -4,7 +4,10 @@ import {
   readSessionResume,
 } from "@/server/storage/resumeFileStore";
 import { extractMcpToken } from "@/server/storage/tokenUtils";
-import { GetResumeResponseSchema, UnauthorizedResponseSchema } from "./response";
+import {
+  GetResumeResponseSchema,
+  UnauthorizedResponseSchema,
+} from "./response";
 
 const route = createRoute({
   method: "get",
@@ -35,12 +38,18 @@ export function registerGetResumeEndpoint(app: OpenAPIHono) {
   app.openapi(route, async (c) => {
     const token = extractMcpToken(c.req.raw.headers);
     if (!token || !isSessionActive(token)) {
-      return c.json({ error: "Missing, expired, or revoked MCP session token" }, 401);
+      return c.json(
+        { error: "Missing, expired, or revoked MCP session token" },
+        401,
+      );
     }
 
     const session = readSessionResume(token);
     if (!session) {
-      return c.json({ error: "Missing, expired, or revoked MCP session token" }, 401);
+      return c.json(
+        { error: "Missing, expired, or revoked MCP session token" },
+        401,
+      );
     }
 
     return c.json(session.data, 200);

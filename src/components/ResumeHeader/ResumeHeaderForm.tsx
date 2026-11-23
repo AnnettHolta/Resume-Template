@@ -1,7 +1,7 @@
 "use client";
 
 import type { ResumeProfile } from "@/types/resume";
-import styles from "./ResumeHeader.module.scss";
+import styles from "./ResumeHeaderForm.module.scss";
 
 interface ResumeHeaderFormProps {
   draft: ResumeProfile;
@@ -16,7 +16,7 @@ export function ResumeHeaderForm({
 }: ResumeHeaderFormProps) {
   const updateContact = (
     field: keyof ResumeProfile["contact"],
-    value: string
+    value: string,
   ) => {
     onChange({
       ...draft,
@@ -108,4 +108,3 @@ export function ResumeHeaderForm({
     </div>
   );
 }
-

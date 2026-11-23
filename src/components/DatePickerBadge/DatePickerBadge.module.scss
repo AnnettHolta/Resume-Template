@@ -14,7 +14,9 @@
   border-radius: 6px;
   padding: 0.05rem 0.3rem;
   margin: -0.05rem -0.3rem;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
 
   &:hover {
     background-color: $color-accent-blue-soft;

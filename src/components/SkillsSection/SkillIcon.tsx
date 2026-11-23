@@ -23,7 +23,11 @@ export function SkillIcon({
   if (!iconUrl || failedUrl === iconUrl) {
     if (fallbackKind === "ai") {
       return (
-        <Sparkles size={size} className={styles.fallbackIcon} aria-hidden="true" />
+        <Sparkles
+          size={size}
+          className={styles.fallbackIcon}
+          aria-hidden="true"
+        />
       );
     }
     if (fallbackKind === "comms") {
@@ -35,7 +39,9 @@ export function SkillIcon({
         />
       );
     }
-    return <Code2 size={size} className={styles.fallbackIcon} aria-hidden="true" />;
+    return (
+      <Code2 size={size} className={styles.fallbackIcon} aria-hidden="true" />
+    );
   }
 
   return (
@@ -50,4 +56,3 @@ export function SkillIcon({
     />
   );
 }
-

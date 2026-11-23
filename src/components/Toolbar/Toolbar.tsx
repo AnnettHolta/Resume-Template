@@ -80,7 +80,9 @@ export function Toolbar({
             data-tooltip-position="bot"
           >
             History {historyPosition}/{historyTotal}{" "}
-            <span className={styles.historyMax}>(max {MAX_HISTORY_LENGTH})</span>
+            <span className={styles.historyMax}>
+              (max {MAX_HISTORY_LENGTH})
+            </span>
           </span>
         </div>
 

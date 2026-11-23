@@ -61,7 +61,10 @@
   }
 }
 
-.identity { flex: 1; min-width: 0; }
+.identity {
+  flex: 1;
+  min-width: 0;
+}
 
 .name {
   font-family: $font-display;
@@ -70,7 +73,9 @@
   letter-spacing: -0.024em;
   line-height: 1.15;
   color: $color-text-primary;
-  @media (max-width: 640px) { font-size: 1.5rem; }
+  @media (max-width: 640px) {
+    font-size: 1.5rem;
+  }
 }
 
 .headline {
@@ -80,7 +85,9 @@
   letter-spacing: -0.015em;
   color: $color-text-secondary;
   @media print {
-    :global(html:not([data-print-mode="visual"])) & { color: #222222; }
+    :global(html:not([data-print-mode="visual"])) & {
+      color: #222222;
+    }
   }
 }
 
@@ -94,25 +101,38 @@
   font-size: 0.8125rem;
   color: $color-text-secondary;
   @media print {
-    :global(html:not([data-print-mode="visual"])) & { color: #000000; }
+    :global(html:not([data-print-mode="visual"])) & {
+      color: #000000;
+    }
   }
 }
 
-.metaItem { display: inline-flex; align-items: center; gap: 0.375rem; }
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
 
 .metaIcon {
   color: $color-text-muted;
   @media print {
-    :global(html:not([data-print-mode="visual"])) & { color: #000000; }
+    :global(html:not([data-print-mode="visual"])) & {
+      color: #000000;
+    }
   }
 }
 
 .metaLink {
   transition: color 0.15s ease;
-  &:hover { color: $color-accent-blue; }
+  &:hover {
+    color: $color-accent-blue;
+  }
 }
 
-.dot { color: $color-border-default; user-select: none; }
+.dot {
+  color: $color-border-default;
+  user-select: none;
+}
 
 .socialPills {
   margin-top: 0.75rem;
@@ -171,46 +191,6 @@
 
   &:hover {
     background: $color-bg-subtle;
-  }
-}
-
-.editStack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.contactGrid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem;
-
-  @media (max-width: 600px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.fieldLabel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: $color-text-secondary;
-
-  input {
-    padding: 0.45rem 0.65rem;
-    border: 1px solid $color-border-default;
-    border-radius: $radius-sm;
-    background: $color-bg-sheet;
-    font-size: 0.875rem;
-    font-weight: 400;
-    color: $color-text-primary;
-
-    &:focus {
-      outline: none;
-      border-color: $color-accent-blue;
-    }
   }
 }
 

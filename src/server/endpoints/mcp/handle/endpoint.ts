@@ -14,7 +14,7 @@ export function registerMcpEndpoint(app: OpenAPIHono) {
           error:
             "Missing, expired, or revoked resumeMcpToken. Pass Authorization: Bearer <token>.",
         },
-        401
+        401,
       );
     }
 

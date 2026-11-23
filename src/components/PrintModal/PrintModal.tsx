@@ -67,7 +67,11 @@ export function PrintModal({
           </button>
         </div>
 
-        <div className={styles.optionsGrid} role="radiogroup" aria-label="Print layout">
+        <div
+          className={styles.optionsGrid}
+          role="radiogroup"
+          aria-label="Print layout"
+        >
           <button
             type="button"
             role="radio"
@@ -108,11 +112,7 @@ export function PrintModal({
         </div>
 
         <div className={styles.footer}>
-          <button
-            type="button"
-            className={styles.cancelBtn}
-            onClick={onClose}
-          >
+          <button type="button" className={styles.cancelBtn} onClick={onClose}>
             Cancel
           </button>
           <button
@@ -128,4 +128,3 @@ export function PrintModal({
     </div>
   );
 }
-

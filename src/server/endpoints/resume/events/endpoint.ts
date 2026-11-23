@@ -33,7 +33,7 @@ export function registerResumeEventsEndpoint(app: OpenAPIHono) {
     if (!token || !isSessionActive(token)) {
       return c.json(
         { error: "Missing, expired, or revoked MCP session token" },
-        401
+        401,
       );
     }
 

@@ -71,11 +71,7 @@ export function GeneralConfirmModal({
         <p className={styles.description}>{description}</p>
 
         <div className={styles.footer}>
-          <button
-            type="button"
-            className={styles.cancelBtn}
-            onClick={onCancel}
-          >
+          <button type="button" className={styles.cancelBtn} onClick={onCancel}>
             {cancelLabel}
           </button>
           <button
@@ -92,4 +88,3 @@ export function GeneralConfirmModal({
     </div>
   );
 }
-

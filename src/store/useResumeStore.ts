@@ -109,7 +109,7 @@ export const useResumeStore = create<ResumeStoreState>()(
         const rawIndex = typeof typed.index === "number" ? typed.index : 0;
         const clampedIndex = Math.max(
           0,
-          Math.min(rawIndex, validEntries.length - 1)
+          Math.min(rawIndex, validEntries.length - 1),
         );
         return {
           ...current,
@@ -120,7 +120,6 @@ export const useResumeStore = create<ResumeStoreState>()(
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
-    }
-  )
+    },
+  ),
 );
-

@@ -61,30 +61,46 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
                   <address className={styles.metaRow}>
                     {profile.contact.location && (
                       <span className={styles.metaItem}>
-                        <MapPin size={14} className={styles.metaIcon} aria-hidden="true" />
+                        <MapPin
+                          size={14}
+                          className={styles.metaIcon}
+                          aria-hidden="true"
+                        />
                         <span>{profile.contact.location}</span>
                       </span>
                     )}
                     {profile.contact.email && (
                       <>
-                        <span className={styles.dot} aria-hidden="true">•</span>
+                        <span className={styles.dot} aria-hidden="true">
+                          •
+                        </span>
                         <a
                           className={`${styles.metaItem} ${styles.metaLink}`}
                           href={`mailto:${profile.contact.email}`}
                         >
-                          <Mail size={14} className={styles.metaIcon} aria-hidden="true" />
+                          <Mail
+                            size={14}
+                            className={styles.metaIcon}
+                            aria-hidden="true"
+                          />
                           <span>{profile.contact.email}</span>
                         </a>
                       </>
                     )}
                     {profile.contact.phone && (
                       <>
-                        <span className={styles.dot} aria-hidden="true">•</span>
+                        <span className={styles.dot} aria-hidden="true">
+                          •
+                        </span>
                         <a
                           className={`${styles.metaItem} ${styles.metaLink}`}
                           href={`tel:${profile.contact.phone}`}
                         >
-                          <Phone size={14} className={styles.metaIcon} aria-hidden="true" />
+                          <Phone
+                            size={14}
+                            className={styles.metaIcon}
+                            aria-hidden="true"
+                          />
                           <span>{profile.contact.phone}</span>
                         </a>
                       </>
@@ -108,7 +124,10 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
                         >
                           <Globe size={12} aria-hidden="true" />
                           <span>
-                            {profile.contact.website.replace(/^https?:\/\//, "")}
+                            {profile.contact.website.replace(
+                              /^https?:\/\//,
+                              "",
+                            )}
                           </span>
                         </a>
                       )}

@@ -37,7 +37,10 @@ const sessionStore =
 
 const subscribers =
   globalForRuntime.__resumeSubscribers ??
-  (globalForRuntime.__resumeSubscribers = new Map<string, Set<ResumeListener>>());
+  (globalForRuntime.__resumeSubscribers = new Map<
+    string,
+    Set<ResumeListener>
+  >());
 
 function pruneExpiredSessions(): void {
   const now = Date.now();
@@ -65,7 +68,7 @@ export function isSessionActive(token: string): boolean {
 
 export async function activateSession(
   token: string,
-  initialResume?: ResumeData
+  initialResume?: ResumeData,
 ): Promise<void> {
   if (!isValidMcpToken(token)) {
     throw new Error("Invalid MCP session token");
@@ -96,7 +99,7 @@ export function readSessionResume(token: string): {
 export function writeSessionResume(
   token: string,
   data: ResumeData,
-  source: ResumeUpdateSource
+  source: ResumeUpdateSource,
 ): number | null {
   if (!isValidMcpToken(token)) return null;
   pruneExpiredSessions();
@@ -136,7 +139,7 @@ export function revokeSession(token: string): void {
 
 export function subscribeToResumeUpdates(
   token: string,
-  listener: ResumeListener
+  listener: ResumeListener,
 ): () => void {
   const key = hashMcpToken(token);
   let set = subscribers.get(key);

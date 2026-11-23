@@ -51,4 +51,3 @@ export function inputValueToDisplayMonth(value: string): string {
 
   return `${monthName} ${year}`;
 }
-

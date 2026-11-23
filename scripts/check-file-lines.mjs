@@ -21,9 +21,7 @@ async function collectFiles(dir) {
 }
 
 function countCodeLines(content) {
-  return content
-    .split(/\r?\n/)
-    .filter((line) => line.trim().length > 0).length;
+  return content.split(/\r?\n/).filter((line) => line.trim().length > 0).length;
 }
 
 async function main() {
@@ -45,19 +43,19 @@ async function main() {
 
   for (const w of warnings) {
     console.warn(
-      `[WARN]  ${w.rel}: ${w.lines} code lines (>= ${WARN_THRESHOLD}, <= ${ERROR_THRESHOLD})`
+      `[WARN]  ${w.rel}: ${w.lines} code lines (>= ${WARN_THRESHOLD}, <= ${ERROR_THRESHOLD})`,
     );
   }
 
   for (const e of errors) {
     console.error(
-      `[ERROR] ${e.rel}: ${e.lines} code lines (> ${ERROR_THRESHOLD})`
+      `[ERROR] ${e.rel}: ${e.lines} code lines (> ${ERROR_THRESHOLD})`,
     );
   }
 
   if (warnings.length === 0 && errors.length === 0) {
     console.log(
-      `Line check passed: all ${files.length} files are under ${WARN_THRESHOLD} code lines.`
+      `Line check passed: all ${files.length} files are under ${WARN_THRESHOLD} code lines.`,
     );
   }
 
@@ -67,4 +65,3 @@ async function main() {
 }
 
 await main();
-

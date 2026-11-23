@@ -6,4 +6,3 @@ export const GetResumeResponseSchema = ResumeDataSchema;
 export const UnauthorizedResponseSchema = z.object({
   error: z.string(),
 });
-

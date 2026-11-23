@@ -7,4 +7,3 @@ export const UpdateResumeResponseSchema = z.object({
 export const UpdateResumeErrorSchema = z.object({
   error: z.string(),
 });
-

@@ -71,4 +71,3 @@ export function ExperienceSection({ items, onChange }: ExperienceSectionProps) {
     </section>
   );
 }
-

@@ -7,7 +7,7 @@ import type { ResumeData } from "@/types/resume";
 describe("ATS & Auto-Reader Parseability", () => {
   it("exposes clean semantic landmarks, heading hierarchy, <time> tags, and selectable text", () => {
     const { container } = render(
-      <ResumeEditor initialData={initialResume as ResumeData} />
+      <ResumeEditor initialData={initialResume as ResumeData} />,
     );
 
     // Single main landmark and header landmark
@@ -21,7 +21,7 @@ describe("ATS & Auto-Reader Parseability", () => {
     expect(h1).toHaveTextContent("John Smith");
 
     const h2Texts = Array.from(container.querySelectorAll("h2")).map((el) =>
-      el.textContent?.trim()
+      el.textContent?.trim(),
     );
     expect(h2Texts).toEqual(["About", "Experience", "Education", "Skills"]);
 
@@ -30,19 +30,19 @@ describe("ATS & Auto-Reader Parseability", () => {
     expect(address).toHaveTextContent("john.smith@example.com");
     expect(address).toHaveTextContent("San Francisco, CA");
     expect(
-      container.querySelector('a[href="mailto:john.smith@example.com"]')
+      container.querySelector('a[href="mailto:john.smith@example.com"]'),
     ).toBeInTheDocument();
 
     // Experience bullet points have selectable print text (not trapped only in <textarea>)
     const printBullets = Array.from(
-      container.querySelectorAll(".bulletPrintText")
+      container.querySelectorAll(".bulletPrintText"),
     ).map((el) => el.textContent?.trim());
     expect(printBullets.length).toBeGreaterThanOrEqual(5);
     expect(printBullets[0]).toContain("multi-tenant analytics dashboard");
 
     // Semantic <time> elements for date ranges
     const times = Array.from(container.querySelectorAll("time")).map((el) =>
-      el.textContent?.trim()
+      el.textContent?.trim(),
     );
     expect(times).toContain("Jan 2023");
     expect(times).toContain("Present");
@@ -51,7 +51,7 @@ describe("ATS & Auto-Reader Parseability", () => {
 
     // Skills expose lowercase machine-readable aria-label and data-skill
     const skillItems = Array.from(
-      container.querySelectorAll("li[data-skill]")
+      container.querySelectorAll("li[data-skill]"),
     ).map((el) => el.getAttribute("data-skill"));
     expect(skillItems).toContain("typescript");
     expect(skillItems).toContain("react");
@@ -82,17 +82,16 @@ describe("ATS & Auto-Reader Parseability", () => {
     const { container } = render(<ResumeEditor initialData={minimalResume} />);
 
     expect(
-      container.querySelector('section[aria-labelledby="about-heading"]')
+      container.querySelector('section[aria-labelledby="about-heading"]'),
     ).toHaveClass("no-print");
     expect(
-      container.querySelector('section[aria-labelledby="experience-heading"]')
+      container.querySelector('section[aria-labelledby="experience-heading"]'),
     ).toHaveClass("no-print");
     expect(
-      container.querySelector('section[aria-labelledby="education-heading"]')
+      container.querySelector('section[aria-labelledby="education-heading"]'),
     ).toHaveClass("no-print");
     expect(
-      container.querySelector('section[aria-labelledby="skills-heading"]')
+      container.querySelector('section[aria-labelledby="skills-heading"]'),
     ).toHaveClass("no-print");
   });
 });
-

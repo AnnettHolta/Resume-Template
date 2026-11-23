@@ -101,7 +101,9 @@
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.12s ease, color 0.12s ease;
+  transition:
+    opacity 0.12s ease,
+    color 0.12s ease;
 
   &:hover {
     background: $color-danger-soft;
@@ -128,4 +130,3 @@
     background: $color-accent-blue-soft;
   }
 }
-

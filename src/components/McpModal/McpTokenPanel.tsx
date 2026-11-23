@@ -42,7 +42,7 @@ export function McpTokenPanel({
       },
     },
     null,
-    2
+    2,
   );
 
   const copyText = async (text: string, type: "token" | "config") => {
@@ -132,4 +132,3 @@ export function McpTokenPanel({
     </div>
   );
 }
-

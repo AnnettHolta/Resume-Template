@@ -8,7 +8,9 @@
   border-radius: $radius-md;
   border: 1px solid $color-border-subtle;
   background: $color-bg-sheet;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   break-inside: avoid;
 
   &:hover {
@@ -138,7 +140,9 @@
   background: transparent;
   padding: 0.05rem 0.3rem;
   margin: -0.05rem -0.3rem;
-  transition: border-color 0.12s ease, background-color 0.12s ease;
+  transition:
+    border-color 0.12s ease,
+    background-color 0.12s ease;
 
   &:hover {
     background: $color-bg-subtle;

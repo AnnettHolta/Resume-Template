@@ -37,11 +37,12 @@ export function ExperienceCard({
           .filter((b) => b.length > 0),
       });
     },
-    [onCommit]
+    [onCommit],
   );
 
   const trimmedLogoSrc = draft.companyImageUrl.trim();
-  const showImage = Boolean(trimmedLogoSrc) && failedImageUrl !== trimmedLogoSrc;
+  const showImage =
+    Boolean(trimmedLogoSrc) && failedImageUrl !== trimmedLogoSrc;
 
   return (
     <article className={styles.card}>
@@ -65,7 +66,10 @@ export function ExperienceCard({
           ) : (
             <Building2 size={22} strokeWidth={1.5} />
           )}
-          <span className={`${styles.logoEditHint} no-print`} aria-hidden="true">
+          <span
+            className={`${styles.logoEditHint} no-print`}
+            aria-hidden="true"
+          >
             <ImagePlus size={12} />
           </span>
         </button>

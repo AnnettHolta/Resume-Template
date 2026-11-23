@@ -41,4 +41,3 @@ export interface ResumeData {
   education: EducationItem[];
   skills: string[];
 }
-

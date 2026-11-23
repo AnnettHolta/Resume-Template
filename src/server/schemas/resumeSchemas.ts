@@ -43,4 +43,3 @@ export const ResumeDataSchema = z.object({
   education: z.array(EducationItemSchema),
   skills: z.array(z.string()),
 });
-

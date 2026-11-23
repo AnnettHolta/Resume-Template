@@ -33,7 +33,7 @@ export function createResumeMcpServer(token: string): McpServer {
       return {
         content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
       };
-    }
+    },
   );
 
   server.tool(
@@ -71,9 +71,11 @@ export function createResumeMcpServer(token: string): McpServer {
       };
       writeSessionResume(token, next, "mcp");
       return {
-        content: [{ type: "text", text: JSON.stringify(next.profile, null, 2) }],
+        content: [
+          { type: "text", text: JSON.stringify(next.profile, null, 2) },
+        ],
       };
-    }
+    },
   );
 
   server.tool(
@@ -95,7 +97,7 @@ export function createResumeMcpServer(token: string): McpServer {
           { type: "text", text: JSON.stringify(next.experience, null, 2) },
         ],
       };
-    }
+    },
   );
 
   server.tool(
@@ -116,7 +118,7 @@ export function createResumeMcpServer(token: string): McpServer {
           { type: "text", text: JSON.stringify(next.experience, null, 2) },
         ],
       };
-    }
+    },
   );
 
   server.tool(
@@ -138,7 +140,7 @@ export function createResumeMcpServer(token: string): McpServer {
           { type: "text", text: JSON.stringify(next.education, null, 2) },
         ],
       };
-    }
+    },
   );
 
   server.tool(
@@ -159,7 +161,7 @@ export function createResumeMcpServer(token: string): McpServer {
           { type: "text", text: JSON.stringify(next.education, null, 2) },
         ],
       };
-    }
+    },
   );
 
   server.tool(
@@ -171,7 +173,7 @@ export function createResumeMcpServer(token: string): McpServer {
     async ({ skills }) => {
       const current = requireSession();
       const existingLower = new Set(
-        current.skills.map((s) => s.trim().toLowerCase())
+        current.skills.map((s) => s.trim().toLowerCase()),
       );
       const added: string[] = [];
 
@@ -191,7 +193,7 @@ export function createResumeMcpServer(token: string): McpServer {
       return {
         content: [{ type: "text", text: JSON.stringify(next.skills, null, 2) }],
       };
-    }
+    },
   );
 
   server.tool(
@@ -206,14 +208,14 @@ export function createResumeMcpServer(token: string): McpServer {
       const next = {
         ...current,
         skills: current.skills.filter(
-          (s) => !toRemove.has(s.trim().toLowerCase())
+          (s) => !toRemove.has(s.trim().toLowerCase()),
         ),
       };
       writeSessionResume(token, next, "mcp");
       return {
         content: [{ type: "text", text: JSON.stringify(next.skills, null, 2) }],
       };
-    }
+    },
   );
 
   return server;

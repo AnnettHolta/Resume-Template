@@ -5,7 +5,10 @@ import {
 } from "@/server/storage/resumeFileStore";
 import { extractMcpToken } from "@/server/storage/tokenUtils";
 import { UpdateResumeRequestSchema } from "./request";
-import { UpdateResumeErrorSchema, UpdateResumeResponseSchema } from "./response";
+import {
+  UpdateResumeErrorSchema,
+  UpdateResumeResponseSchema,
+} from "./response";
 
 const route = createRoute({
   method: "put",
@@ -45,13 +48,19 @@ export function registerUpdateResumeEndpoint(app: OpenAPIHono) {
   app.openapi(route, async (c) => {
     const token = extractMcpToken(c.req.raw.headers);
     if (!token || !isSessionActive(token)) {
-      return c.json({ error: "Missing, expired, or revoked MCP session token" }, 401);
+      return c.json(
+        { error: "Missing, expired, or revoked MCP session token" },
+        401,
+      );
     }
 
     const body = c.req.valid("json");
     const version = writeSessionResume(token, body, "browser");
     if (version === null) {
-      return c.json({ error: "Missing, expired, or revoked MCP session token" }, 401);
+      return c.json(
+        { error: "Missing, expired, or revoked MCP session token" },
+        401,
+      );
     }
 
     return c.json({ saved: true }, 200);

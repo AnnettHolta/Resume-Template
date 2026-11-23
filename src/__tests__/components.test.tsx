@@ -52,7 +52,7 @@ describe("PrintModal", () => {
         initialMode="printer"
         onConfirmPrint={onConfirmPrint}
         onClose={vi.fn()}
-      />
+      />,
     );
 
     fireEvent.click(screen.getByRole("radio", { name: /editor-like view/i }));
@@ -81,14 +81,14 @@ describe("McpModal", () => {
         onTokenChange={onTokenChange}
         onSessionRevalidated={vi.fn()}
         onClose={vi.fn()}
-      />
+      />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: /request token/i }));
     await waitFor(() =>
       expect(onTokenChange).toHaveBeenCalledWith(
-        "11111111-2222-3333-4444-555555555555"
-      )
+        "11111111-2222-3333-4444-555555555555",
+      ),
     );
 
     rerender(
@@ -100,24 +100,23 @@ describe("McpModal", () => {
         onTokenChange={onTokenChange}
         onSessionRevalidated={vi.fn()}
         onClose={vi.fn()}
-      />
+      />,
     );
 
     expect(
-      screen.queryByText("11111111-2222-3333-4444-555555555555")
+      screen.queryByText("11111111-2222-3333-4444-555555555555"),
     ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /show token/i }));
     expect(
-      screen.getByText("11111111-2222-3333-4444-555555555555")
+      screen.getByText("11111111-2222-3333-4444-555555555555"),
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /regenerate token/i }));
     expect(
-      screen.getByText(/your current token will be revoked immediately/i)
+      screen.getByText(/your current token will be revoked immediately/i),
     ).toBeInTheDocument();
 
     fetchMock.mockRestore();
   });
 });
-
