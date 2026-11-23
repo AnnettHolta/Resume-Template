@@ -1,7 +1,7 @@
 import { devicon, type SkillCatalogItem } from "./types";
 
 export const DATABASE_SKILLS: SkillCatalogItem[] = [
-  { name: "PostgreSQL", category: "Database", iconUrl: devicon("postgresql") },
+  { name: "PostgreSQL", category: "Database", iconUrl: devicon("postgresql"), aliases: ["postgres", "psql"] },
   { name: "MySQL", category: "Database", iconUrl: devicon("mysql") },
   { name: "MongoDB", category: "Database", iconUrl: devicon("mongodb") },
   { name: "Redis", category: "Database", iconUrl: devicon("redis") },

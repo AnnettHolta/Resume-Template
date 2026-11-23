@@ -21,9 +21,13 @@ export const SKILLS_CATALOG: SkillCatalogItem[] = [
   ...COLLABORATION_SKILLS,
 ];
 
-const CATALOG_MAP = new Map<string, SkillCatalogItem>(
-  SKILLS_CATALOG.map((item) => [item.name.toLowerCase(), item])
-);
+const CATALOG_MAP = new Map<string, SkillCatalogItem>();
+for (const item of SKILLS_CATALOG) {
+  CATALOG_MAP.set(item.name.toLowerCase(), item);
+  for (const alias of item.aliases ?? []) {
+    CATALOG_MAP.set(alias.toLowerCase(), item);
+  }
+}
 
 export function findSkillCatalogItem(name: string): SkillCatalogItem | undefined {
   return CATALOG_MAP.get(name.trim().toLowerCase());

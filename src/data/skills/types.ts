@@ -3,6 +3,7 @@ export interface SkillCatalogItem {
   category: string;
   iconUrl?: string;
   fallbackKind?: "code" | "ai" | "comms";
+  aliases?: string[];
 }
 
 const DEVICON_BASE =
@@ -10,4 +11,3 @@ const DEVICON_BASE =
 
 export const devicon = (slug: string, variant = "original"): string =>
   `${DEVICON_BASE}/${slug}/${slug}-${variant}.svg`;
-

@@ -2,7 +2,7 @@ import { devicon, type SkillCatalogItem } from "./types";
 
 export const DEVOPS_SKILLS: SkillCatalogItem[] = [
   { name: "Docker", category: "DevOps", iconUrl: devicon("docker") },
-  { name: "Kubernetes", category: "DevOps", iconUrl: devicon("kubernetes") },
+  { name: "Kubernetes", category: "DevOps", iconUrl: devicon("kubernetes"), aliases: ["k8s"] },
   {
     name: "AWS",
     category: "Cloud",

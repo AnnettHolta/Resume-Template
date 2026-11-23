@@ -81,9 +81,12 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
     for (const item of SKILLS_CATALOG) {
       const lower = item.name.toLowerCase();
       if (normalizedExisting.has(lower)) continue;
+      const aliasMatches = (item.aliases ?? []).some((alias) =>
+        alias.toLowerCase().includes(query)
+      );
       if (lower.startsWith(query)) {
         startsWith.push(item);
-      } else if (lower.includes(query)) {
+      } else if (lower.includes(query) || aliasMatches) {
         includes.push(item);
       }
     }
@@ -98,13 +101,15 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
   const commitAddSkill = (skillName: string) => {
     const trimmed = skillName.trim();
     if (!trimmed) return;
-    if (!normalizedExisting.has(trimmed.toLowerCase())) {
+    const matched = findSkillCatalogItem(trimmed);
+    const resolvedSkill = matched ? matched.name : trimmed;
+    if (!normalizedExisting.has(resolvedSkill.toLowerCase())) {
       setAnimatedSkills((prev) => {
         const next = new Set(prev);
-        next.add(trimmed);
+        next.add(resolvedSkill);
         return next;
       });
-      onChange([...skills, trimmed]);
+      onChange([...skills, resolvedSkill]);
     }
     setNewSkill("");
     setActiveIndex(0);
@@ -126,10 +131,13 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
       <ul className={styles.skillList}>
         {skills.map((skill) => {
           const catalogItem = findSkillCatalogItem(skill);
+          const lowercaseSkill = skill.toLowerCase();
           const shouldAnimate = animatedSkills.has(skill);
           return (
             <li
               key={skill}
+              aria-label={lowercaseSkill}
+              data-skill={lowercaseSkill}
               className={`${styles.skillTag} ${
                 shouldAnimate ? styles.skillTagEnter : ""
               }`}
@@ -138,7 +146,7 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
                 <SkillIcon
                   iconUrl={catalogItem.iconUrl}
                   fallbackKind={catalogItem.fallbackKind}
-                  label={skill}
+                  label={lowercaseSkill}
                   size={14}
                 />
               )}
@@ -147,7 +155,7 @@ export function SkillsSection({ skills, onChange }: SkillsSectionProps) {
                 type="button"
                 className={`${styles.removeBtn} no-print`}
                 onClick={() => handleRemoveSkill(skill)}
-                aria-label={`Remove ${skill}`}
+                aria-label={`remove ${lowercaseSkill}`}
               >
                 <X size={12} />
               </button>

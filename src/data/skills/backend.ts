@@ -1,9 +1,9 @@
 import { devicon, type SkillCatalogItem } from "./types";
 
 export const BACKEND_SKILLS: SkillCatalogItem[] = [
-  { name: "Node.js", category: "Backend", iconUrl: devicon("nodejs") },
-  { name: "Express", category: "Backend", iconUrl: devicon("express") },
-  { name: "NestJS", category: "Backend", iconUrl: devicon("nestjs") },
+  { name: "Node.js", category: "Backend", iconUrl: devicon("nodejs"), aliases: ["node", "nodejs"] },
+  { name: "Express", category: "Backend", iconUrl: devicon("express"), aliases: ["expressjs"] },
+  { name: "NestJS", category: "Backend", iconUrl: devicon("nestjs"), aliases: ["nest"] },
   { name: "Python", category: "Language", iconUrl: devicon("python") },
   { name: "FastAPI", category: "Backend", iconUrl: devicon("fastapi") },
   { name: "Django", category: "Backend", iconUrl: devicon("django", "plain") },
