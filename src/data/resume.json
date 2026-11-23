@@ -1,0 +1,83 @@
+{
+  "profile": {
+    "name": "John Smith",
+    "headline": "Senior Full-Stack Software Engineer",
+    "summary": "Results-driven software engineer with 7+ years of experience designing, building, and scaling web applications and distributed backend services. Focused on clean architecture, accessibility, and high-reliability systems.",
+    "contact": {
+      "email": "john.smith@example.com",
+      "phone": "+1 (555) 234-5678",
+      "location": "San Francisco, CA",
+      "website": "https://johnsmith.dev",
+      "linkedin": "linkedin.com/in/johnsmith",
+      "github": "github.com/johnsmith"
+    }
+  },
+  "experience": [
+    {
+      "id": "exp-1",
+      "title": "Senior Software Engineer",
+      "company": "Acme Cloud Systems",
+      "companyImageUrl": "",
+      "employmentType": "Full-time",
+      "location": "San Francisco, CA",
+      "startDate": "Jan 2023",
+      "endDate": "Present",
+      "bullets": [
+        "Architected and delivered a multi-tenant analytics dashboard serving 120k+ monthly active users with 99.95% uptime.",
+        "Reduced API p95 latency by 42% through query optimization, Redis caching, and streaming server responses.",
+        "Mentored 5 engineers through code reviews, design docs, and bi-weekly architecture sessions."
+      ]
+    },
+    {
+      "id": "exp-2",
+      "title": "Software Engineer",
+      "company": "Northstar Digital",
+      "companyImageUrl": "",
+      "employmentType": "Full-time",
+      "location": "Remote",
+      "startDate": "Mar 2020",
+      "endDate": "Dec 2022",
+      "bullets": [
+        "Built and maintained customer-facing TypeScript and React applications with full WCAG 2.1 AA compliance.",
+        "Implemented automated CI/CD pipelines and end-to-end test suites, cutting release regressions by 60%."
+      ]
+    },
+    {
+      "id": "exp-3",
+      "title": "Junior Web Developer",
+      "company": "Brightline Studio",
+      "companyImageUrl": "",
+      "employmentType": "Full-time",
+      "location": "Seattle, WA",
+      "startDate": "Jun 2018",
+      "endDate": "Feb 2020",
+      "bullets": [
+        "Developed responsive marketing and e-commerce interfaces using semantic HTML, SCSS, and modern JavaScript.",
+        "Collaborated with product designers to standardize reusable UI component libraries."
+      ]
+    }
+  ],
+  "education": [
+    {
+      "id": "edu-1",
+      "school": "University of Washington",
+      "degree": "Bachelor of Science",
+      "field": "Computer Science",
+      "startDate": "2014",
+      "endDate": "2018"
+    }
+  ],
+  "skills": [
+    "TypeScript",
+    "React",
+    "Next.js",
+    "Node.js",
+    "PostgreSQL",
+    "GraphQL",
+    "SCSS",
+    "Docker",
+    "AWS",
+    "System Design"
+  ]
+}
+

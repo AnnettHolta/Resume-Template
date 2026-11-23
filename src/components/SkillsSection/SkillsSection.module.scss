@@ -1,0 +1,101 @@
+@use "@/styles/variables" as *;
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.heading {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: $color-text-primary;
+}
+
+.skillList {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.skillTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.75rem;
+  border: 1px solid $color-border-subtle;
+  border-radius: $radius-pill;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: $color-text-primary;
+  background: $color-bg-subtle;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: $color-border-default;
+  }
+
+  @media print {
+    background: transparent;
+    border-color: #d4d4d4;
+    padding: 0.15rem 0.5rem;
+    color: #000000;
+  }
+}
+
+.removeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: $color-text-muted;
+  padding: 0.1rem;
+
+  &:hover {
+    color: $color-danger;
+  }
+}
+
+.addRow {
+  margin-top: 0.25rem;
+  display: flex;
+  gap: 0.5rem;
+  max-width: 340px;
+
+  input {
+    flex: 1;
+    padding: 0.42rem 0.75rem;
+    border: 1px solid $color-border-default;
+    border-radius: $radius-pill;
+    font-size: 0.8125rem;
+    background: $color-bg-sheet;
+
+    &:focus {
+      outline: none;
+      border-color: $color-accent-blue;
+    }
+  }
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.42rem 0.85rem;
+    border: none;
+    border-radius: $radius-pill;
+    background: $color-accent-blue-soft;
+    color: $color-accent-blue;
+    font-size: 0.75rem;
+    font-weight: 500;
+    transition: all 0.15s ease;
+
+    &:hover {
+      background: $color-accent-blue;
+      color: #ffffff;
+    }
+  }
+}

@@ -1,0 +1,142 @@
+@use "@/styles/variables" as *;
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(251, 251, 253, 0.65);
+  backdrop-filter: blur(2px) saturate(180%);
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.03);
+}
+
+.inner {
+  max-width: $toolbar-max-width;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  min-height: 4rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  @media (max-width: 640px) {
+    padding: 0.65rem 1rem;
+  }
+}
+
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: $radius-pill;
+  background: $color-bg-subtle;
+  border: 1px solid rgba(229, 229, 234, 0.7);
+}
+
+.segBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.375rem 0.65rem;
+  border: none;
+  border-radius: $radius-pill;
+  background: transparent;
+  color: $color-text-secondary;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+
+  &:hover:not(:disabled) {
+    color: $color-text-primary;
+    background: $color-bg-sheet;
+    box-shadow: $shadow-apple-sm;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.historyBadge {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: $color-text-secondary;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(245, 245, 247, 0.7);
+}
+
+.historyMax {
+  font-size: 0.6875rem;
+  opacity: 0.65;
+}
+
+.pillBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid $color-border-default;
+  border-radius: $radius-pill;
+  background: $color-bg-sheet;
+  color: $color-text-primary;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  box-shadow: $shadow-apple-sm;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: $color-text-muted;
+  }
+}
+
+.mutedIcon {
+  color: $color-text-secondary;
+}
+
+.resetBtn {
+  color: $color-text-secondary;
+
+  &:hover {
+    color: $color-danger;
+    border-color: $color-danger-border;
+  }
+}
+
+.primaryBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.42rem 1rem;
+  border: none;
+  border-radius: $radius-pill;
+  background: $color-text-primary;
+  color: $color-bg-sheet;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  box-shadow: $shadow-apple-sm;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #000000;
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.hideOnMobile {
+  @media (max-width: 640px) {
+    display: none;
+  }
+}

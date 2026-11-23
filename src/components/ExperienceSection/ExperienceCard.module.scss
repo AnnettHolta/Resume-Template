@@ -1,0 +1,354 @@
+@use "@/styles/variables" as *;
+
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  border-radius: $radius-md;
+  border: 1px solid $color-border-subtle;
+  background: $color-bg-sheet;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  break-inside: avoid;
+
+  &:hover {
+    border-color: $color-border-default;
+    box-shadow: $shadow-apple-card;
+
+    .actions {
+      opacity: 1;
+    }
+  }
+
+  @media print {
+    padding: 0 0 0.75rem 0;
+    border: none;
+    border-bottom: 1px solid #e5e5e5;
+    border-radius: 0;
+    box-shadow: none !important;
+
+    &:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+  }
+}
+
+.logoColumn {
+  flex-shrink: 0;
+}
+
+.logoBox {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(229, 229, 234, 0.7);
+  border-radius: $radius-sm;
+  background: $color-bg-subtle;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: $color-text-secondary;
+  padding: 0;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: $color-text-muted;
+
+    .logoEditHint {
+      opacity: 1;
+    }
+  }
+
+  @media print {
+    width: 38px;
+    height: 38px;
+    background: #ffffff;
+    border-color: #d4d4d4;
+    color: #000000;
+    cursor: default;
+  }
+}
+
+.logoEditHint {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid $color-border-default;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.logoImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: grayscale(100%);
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.imageUrlBar {
+  margin-bottom: 0.5rem;
+
+  input {
+    width: 100%;
+    padding: 0.4rem 0.65rem;
+    border: 1px solid $color-accent-blue;
+    border-radius: $radius-sm;
+    font-size: 0.8125rem;
+    background: $color-bg-sheet;
+
+    &:focus {
+      outline: none;
+    }
+  }
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.titleBlock {
+  flex: 1;
+  min-width: 0;
+}
+
+%ghostInput {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  padding: 0.05rem 0.3rem;
+  margin: -0.05rem -0.3rem;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+
+  &:hover {
+    background: $color-bg-subtle;
+  }
+
+  &:focus {
+    outline: none;
+    background: $color-bg-sheet;
+    border-color: $color-accent-blue;
+  }
+
+  @media print {
+    border-color: transparent !important;
+    background: transparent !important;
+    padding: 0;
+    margin: 0;
+    color: #000000 !important;
+  }
+}
+
+.inlineTitle {
+  @extend %ghostInput;
+  width: 100%;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: $color-text-primary;
+  line-height: 1.3;
+}
+
+.companyRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.15rem;
+}
+
+.inlineCompany {
+  @extend %ghostInput;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: $color-text-primary;
+  min-width: 110px;
+  field-sizing: content;
+}
+
+.inlineType {
+  @extend %ghostInput;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: $color-text-secondary;
+  min-width: 65px;
+  field-sizing: content;
+}
+
+.separator {
+  color: $color-border-default;
+  user-select: none;
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.75rem;
+  color: $color-text-secondary;
+  margin-top: 0.2rem;
+
+  @media print {
+    color: #333333;
+  }
+}
+
+.inlineLocation {
+  @extend %ghostInput;
+  font-size: 0.75rem;
+  color: $color-text-secondary;
+  min-width: 85px;
+  field-sizing: content;
+}
+
+.bullets {
+  list-style: none;
+  margin-top: 0.85rem;
+  padding-left: 0.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.bulletItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  border-radius: 6px;
+  padding: 0.1rem 0.25rem;
+  margin: 0 -0.25rem;
+
+  &:hover {
+    background: $color-canvas;
+
+    .removeBulletBtn {
+      opacity: 1;
+    }
+  }
+
+  @media print {
+    background: transparent !important;
+    padding: 0;
+    margin: 0;
+  }
+}
+
+.bulletDot {
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: $color-text-primary;
+  user-select: none;
+}
+
+.bulletInput {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 0.84375rem;
+  line-height: 1.55;
+  color: rgba(29, 29, 31, 0.9);
+  resize: none;
+  overflow: hidden;
+  padding: 0.05rem 0.25rem;
+
+  &:focus {
+    outline: none;
+    background: $color-bg-sheet;
+    border-color: $color-accent-blue;
+    color: $color-text-primary;
+  }
+
+  @media print {
+    border-color: transparent !important;
+    background: transparent !important;
+    padding: 0;
+    color: #000000 !important;
+  }
+}
+
+.removeBulletBtn {
+  flex-shrink: 0;
+  margin-top: 0.22rem;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: $color-text-muted;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.12s ease;
+
+  &:hover {
+    background: $color-danger-soft;
+    color: $color-danger;
+  }
+}
+
+.addBulletBtn {
+  margin-top: 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px dashed $color-border-default;
+  border-radius: $radius-pill;
+  background: transparent;
+  font-size: 0.75rem;
+  color: $color-text-secondary;
+  transition: all 0.12s ease;
+
+  &:hover {
+    color: $color-accent-blue;
+    border-color: $color-accent-blue;
+    background: $color-accent-blue-soft;
+  }
+}
+
+.actions {
+  flex-shrink: 0;
+  display: flex;
+  gap: 0.25rem;
+  opacity: 0.65;
+  transition: opacity 0.15s ease;
+}
+
+.iconBtn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: $radius-sm;
+  background: transparent;
+  color: $color-text-secondary;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: $color-danger-soft;
+    color: $color-danger;
+  }
+}

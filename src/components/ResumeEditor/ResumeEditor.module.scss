@@ -1,0 +1,53 @@
+@use "@/styles/variables" as *;
+
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas {
+  flex: 1;
+  max-width: $sheet-max-width;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2.25rem 2rem 3rem;
+
+  @media (max-width: 640px) {
+    padding: 1.25rem 1rem 2rem;
+  }
+
+  @media print {
+    max-width: 100%;
+    padding: 0;
+  }
+}
+
+.sheet {
+  background: $color-bg-sheet;
+  border-radius: $radius-lg;
+  box-shadow: $shadow-hairline;
+  padding: 2.75rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.25rem;
+
+  @media (max-width: 768px) {
+    padding: 2rem 1.5rem;
+    gap: 1.75rem;
+  }
+
+  @media print {
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    gap: 1.25rem;
+  }
+}
+
+.footer {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: $color-text-secondary;
+}
