@@ -2,6 +2,7 @@ import { devicon, type SkillCatalogItem } from "./types";
 
 export const MOBILE_SKILLS: SkillCatalogItem[] = [
   { name: "React Native", category: "Mobile", iconUrl: devicon("react") },
+  { name: "Expo", category: "Mobile", iconUrl: devicon("expo") },
   { name: "Flutter", category: "Mobile", iconUrl: devicon("flutter") },
   { name: "Dart", category: "Language", iconUrl: devicon("dart") },
   { name: "Swift", category: "Mobile", iconUrl: devicon("swift") },
@@ -9,5 +10,7 @@ export const MOBILE_SKILLS: SkillCatalogItem[] = [
   { name: "Android", category: "Mobile", iconUrl: devicon("android") },
   { name: "iOS", category: "Mobile", iconUrl: devicon("apple") },
   { name: "Ionic", category: "Mobile", iconUrl: devicon("ionic") },
+  { name: "Capacitor", category: "Mobile", iconUrl: devicon("capacitor") },
+  { name: "Electron", category: "Desktop", iconUrl: devicon("electron") },
+  { name: "Tauri", category: "Desktop", iconUrl: devicon("tauri") },
 ];
-
