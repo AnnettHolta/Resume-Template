@@ -4,6 +4,46 @@ import initialResume from "@/data/resume.json";
 import { apiApp } from "@/server/app";
 
 describe("Hono REPR API & MCP session security", () => {
+  it("requires a current revision for writes and keeps the winning document", async () => {
+    const session = await apiApp.request("/api/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ initialResume }),
+    });
+    const { token } = (await session.json()) as { token: string };
+    const headers = { Authorization: `Bearer ${token}` };
+    const first = await apiApp.request("/api/resume", { headers });
+    const revision = first.headers.get("ETag");
+    expect(revision).toBeTruthy();
+
+    const write = (headline: string, expected?: string) =>
+      apiApp.request("/api/resume", {
+        method: "PUT",
+        headers: {
+          ...headers,
+          "Content-Type": "application/json",
+          ...(expected ? { "If-Match": expected } : {}),
+        },
+        body: JSON.stringify({
+          ...initialResume,
+          profile: { ...initialResume.profile, headline },
+        }),
+      });
+
+    expect((await write("Unconditional edit")).status).toBe(428);
+    const winningWrite = await write("Winning edit", revision!);
+    expect(winningWrite.status).toBe(200);
+    expect(winningWrite.headers.get("ETag")).not.toBe(revision);
+    expect((await write("Stale edit", revision!)).status).toBe(412);
+
+    const latest = await apiApp.request("/api/resume", { headers });
+    expect(latest.headers.get("ETag")).toBe(winningWrite.headers.get("ETag"));
+    await expect(latest.json()).resolves.toMatchObject({
+      profile: { headline: "Winning edit" },
+    });
+    await apiApp.request("/api/session", { method: "DELETE", headers });
+  });
+
   it("exposes OpenAPI spec and Scalar API docs", async () => {
     const specRes = await apiApp.request("/api/openapi.json");
     expect(specRes.status).toBe(200);

@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Resume Template",
   description:
-    "Clean, ATS-friendly LinkedIn-style resume builder with SSR and PDF print support.",
+    "Resume builder with a plain, text-based PDF layout designed for ATS readability.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

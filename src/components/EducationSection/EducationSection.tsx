@@ -90,7 +90,16 @@ function EducationCard({ item, onCommit, onDelete }: EducationCardProps) {
               onCommit(nextDraft);
             }}
           />
-          <span aria-hidden="true">–</span>
+          <span
+            className={
+              draft.startDate.trim() && draft.endDate.trim()
+                ? undefined
+                : "no-print"
+            }
+            aria-hidden="true"
+          >
+            –
+          </span>
           <DatePickerBadge
             value={draft.endDate}
             allowPresent

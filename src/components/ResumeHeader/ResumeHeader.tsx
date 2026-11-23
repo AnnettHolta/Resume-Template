@@ -43,126 +43,126 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
             <AvatarPicker name={profile.name} />
 
             <div className={styles.identity}>
-              {isEditing ? (
+              {isEditing && (
                 <ResumeHeaderForm
                   draft={draft}
                   onChange={setDraft}
                   onBlurCommit={() => onCommit(draft)}
                 />
-              ) : (
-                <>
-                  <h1 className={styles.name}>{profile.name}</h1>
-                  {(isEditing || profile.headline.trim()) && (
-                    <p className={styles.headline}>{profile.headline}</p>
-                  )}
+              )}
+              <div className={isEditing ? styles.printOnly : undefined}>
+                <h1 className={styles.name}>{profile.name}</h1>
+                {profile.headline.trim() && (
+                  <p className={styles.headline}>{profile.headline}</p>
+                )}
 
-                  <address className={styles.metaRow}>
-                    {profile.contact.location && (
-                      <span className={styles.metaItem}>
-                        <MapPin
+                <address className={styles.metaRow}>
+                  {profile.contact.location && (
+                    <span className={styles.metaItem}>
+                      <MapPin
+                        size={14}
+                        className={styles.metaIcon}
+                        aria-hidden="true"
+                      />
+                      <span>{profile.contact.location}</span>
+                    </span>
+                  )}
+                  {profile.contact.email && (
+                    <>
+                      {profile.contact.location && (
+                        <span className={styles.dot} aria-hidden="true">
+                          •
+                        </span>
+                      )}
+                      <a
+                        className={`${styles.metaItem} ${styles.metaLink}`}
+                        href={`mailto:${profile.contact.email}`}
+                      >
+                        <Mail
                           size={14}
                           className={styles.metaIcon}
                           aria-hidden="true"
                         />
-                        <span>{profile.contact.location}</span>
-                      </span>
-                    )}
-                    {profile.contact.email && (
-                      <>
-                        <span className={styles.dot} aria-hidden="true">
-                          •
-                        </span>
-                        <a
-                          className={`${styles.metaItem} ${styles.metaLink}`}
-                          href={`mailto:${profile.contact.email}`}
-                        >
-                          <Mail
-                            size={14}
-                            className={styles.metaIcon}
-                            aria-hidden="true"
-                          />
-                          <span>{profile.contact.email}</span>
-                        </a>
-                      </>
-                    )}
-                    {profile.contact.phone && (
-                      <>
-                        <span className={styles.dot} aria-hidden="true">
-                          •
-                        </span>
-                        <a
-                          className={`${styles.metaItem} ${styles.metaLink}`}
-                          href={`tel:${profile.contact.phone}`}
-                        >
-                          <Phone
-                            size={14}
-                            className={styles.metaIcon}
-                            aria-hidden="true"
-                          />
-                          <span>{profile.contact.phone}</span>
-                        </a>
-                      </>
-                    )}
-                  </address>
-
-                  {(profile.contact.website ||
-                    profile.contact.linkedin ||
-                    profile.contact.github) && (
-                    <div className={styles.socialPills}>
-                      {profile.contact.website && (
-                        <a
-                          className={styles.socialPill}
-                          href={
-                            profile.contact.website.startsWith("http")
-                              ? profile.contact.website
-                              : `https://${profile.contact.website}`
-                          }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Globe size={12} aria-hidden="true" />
-                          <span>
-                            {profile.contact.website.replace(
-                              /^https?:\/\//,
-                              "",
-                            )}
-                          </span>
-                        </a>
-                      )}
-                      {profile.contact.linkedin && (
-                        <a
-                          className={styles.socialPill}
-                          href={
-                            profile.contact.linkedin.startsWith("http")
-                              ? profile.contact.linkedin
-                              : `https://${profile.contact.linkedin}`
-                          }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Briefcase size={12} aria-hidden="true" />
-                          <span>{profile.contact.linkedin}</span>
-                        </a>
-                      )}
-                      {profile.contact.github && (
-                        <a
-                          className={styles.socialPill}
-                          href={
-                            profile.contact.github.startsWith("http")
-                              ? profile.contact.github
-                              : `https://${profile.contact.github}`
-                          }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Code2 size={12} aria-hidden="true" />
-                          <span>{profile.contact.github}</span>
-                        </a>
-                      )}
-                    </div>
+                        <span>{profile.contact.email}</span>
+                      </a>
+                    </>
                   )}
-                </>
-              )}
+                  {profile.contact.phone && (
+                    <>
+                      {(profile.contact.location || profile.contact.email) && (
+                        <span className={styles.dot} aria-hidden="true">
+                          •
+                        </span>
+                      )}
+                      <a
+                        className={`${styles.metaItem} ${styles.metaLink}`}
+                        href={`tel:${profile.contact.phone}`}
+                      >
+                        <Phone
+                          size={14}
+                          className={styles.metaIcon}
+                          aria-hidden="true"
+                        />
+                        <span>{profile.contact.phone}</span>
+                      </a>
+                    </>
+                  )}
+                </address>
+
+                {(profile.contact.website ||
+                  profile.contact.linkedin ||
+                  profile.contact.github) && (
+                  <div className={styles.socialPills}>
+                    {profile.contact.website && (
+                      <a
+                        className={styles.socialPill}
+                        href={
+                          profile.contact.website.startsWith("http")
+                            ? profile.contact.website
+                            : `https://${profile.contact.website}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Globe size={12} aria-hidden="true" />
+                        <span>
+                          {profile.contact.website.replace(/^https?:\/\//, "")}
+                        </span>
+                      </a>
+                    )}
+                    {profile.contact.linkedin && (
+                      <a
+                        className={styles.socialPill}
+                        href={
+                          profile.contact.linkedin.startsWith("http")
+                            ? profile.contact.linkedin
+                            : `https://${profile.contact.linkedin}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Briefcase size={12} aria-hidden="true" />
+                        <span>{profile.contact.linkedin}</span>
+                      </a>
+                    )}
+                    {profile.contact.github && (
+                      <a
+                        className={styles.socialPill}
+                        href={
+                          profile.contact.github.startsWith("http")
+                            ? profile.contact.github
+                            : `https://${profile.contact.github}`
+                        }
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Code2 size={12} aria-hidden="true" />
+                        <span>{profile.contact.github}</span>
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -179,7 +179,11 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
 
         <section
           className={`${styles.aboutSection} ${
-            !isEditing && !profile.summary.trim() ? "no-print" : ""
+            !profile.summary.trim()
+              ? isEditing
+                ? styles.hideEmptySummaryInPrint
+                : "no-print"
+              : ""
           }`}
           aria-labelledby="about-heading"
         >
@@ -189,9 +193,9 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
             </h2>
             <span className={styles.dividerLine} aria-hidden="true" />
           </div>
-          {isEditing ? (
+          {isEditing && (
             <textarea
-              className={styles.summaryInput}
+              className={`${styles.summaryInput} no-print`}
               rows={3}
               value={draft.summary}
               onChange={(e) =>
@@ -200,9 +204,12 @@ export function ResumeHeader({ profile, onCommit }: ResumeHeaderProps) {
               onBlur={() => onCommit(draft)}
               placeholder="Write a concise professional summary..."
             />
-          ) : (
-            <p className={styles.summaryText}>{profile.summary}</p>
           )}
+          <p
+            className={`${styles.summaryText} ${isEditing ? styles.printOnly : ""}`}
+          >
+            {profile.summary}
+          </p>
         </section>
       </div>
     </header>

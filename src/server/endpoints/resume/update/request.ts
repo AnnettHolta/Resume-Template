@@ -1,3 +1,3 @@
-import { ResumeDataSchema } from "@/server/schemas/resumeSchemas";
+import { ResumeDataSchema } from "@/lib/resumeSchema";
 
 export const UpdateResumeRequestSchema = ResumeDataSchema;

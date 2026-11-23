@@ -1,18 +1,9 @@
-"use client";
+﻿"use client";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
-import { debounce } from "lodash-es";
-import {
-  flushIndexedDbWrites,
-  HISTORY_PERSIST_DEBOUNCE_MS,
-} from "@/lib/indexedDbStorage";
-import { isValidResumeData } from "@/lib/resumeStorage";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { flushIndexedDbWrites } from "@/lib/indexedDbStorage";
+import { createResumeSync } from "@/lib/resumeSync";
+import { useResumeStore } from "@/store/useResumeStore";
 import type { ResumeData } from "@/types/resume";
 
 const MCP_COOKIE_NAME = "resumeMcpToken";
@@ -20,15 +11,11 @@ export const MCP_COOKIE_EVENT = "resume-mcp-cookie-change";
 
 function readMcpCookie(): string | null {
   if (typeof document === "undefined") return null;
-  const parts = document.cookie.split(";");
-  for (const part of parts) {
-    const [rawKey, ...rest] = part.trim().split("=");
-    if (rawKey === MCP_COOKIE_NAME) {
-      const value = decodeURIComponent(rest.join("="));
-      return value || null;
-    }
-  }
-  return null;
+  const cookie = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${MCP_COOKIE_NAME}=`));
+  return cookie?.slice(MCP_COOKIE_NAME.length + 1) || null;
 }
 
 function subscribeMcpCookie(callback: () => void) {
@@ -36,166 +23,95 @@ function subscribeMcpCookie(callback: () => void) {
   return () => window.removeEventListener(MCP_COOKIE_EVENT, callback);
 }
 
-interface UseMcpSyncOptions {
-  currentResume: ResumeData;
-  initialData: ResumeData;
-  hasHydrated: boolean;
-  commitResume: (nextData: ResumeData, fallbackInitial: ResumeData) => void;
-  setStatusMessage: (message: string | null) => void;
-}
-
-export function useMcpSync({
-  currentResume,
-  initialData,
-  hasHydrated,
-  commitResume,
-  setStatusMessage,
-}: UseMcpSyncOptions) {
+export function useMcpSync(initialData: ResumeData, hasHydrated: boolean) {
   const mcpToken = useSyncExternalStore(
     subscribeMcpCookie,
     readMcpCookie,
     () => null,
   );
   const [isMcpExpired, setIsMcpExpired] = useState(false);
-  const [mcpSessionNonce, setMcpSessionNonce] = useState(0);
-  const skipNextRemoteSyncRef = useRef(false);
-
-  const debouncedServerSync = useMemo(
-    () =>
-      debounce(async (data: ResumeData) => {
-        try {
-          const res = await fetch("/api/resume", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data),
-          });
-          if (res.status === 401) {
-            setIsMcpExpired(true);
-            setStatusMessage("MCP session expired — click MCP to revalidate");
-          }
-        } catch {
-          // Ignore transient network errors
-        }
-      }, HISTORY_PERSIST_DEBOUNCE_MS),
-    [setStatusMessage],
-  );
+  const [sessionNonce, setSessionNonce] = useState(0);
+  const [conflict, setConflict] = useState<ResumeData | null>(null);
+  const syncRef = useRef<ReturnType<typeof createResumeSync> | null>(null);
 
   useEffect(() => {
-    const handleFlush = () => {
+    const flush = () => {
       flushIndexedDbWrites();
-      debouncedServerSync.flush();
+      syncRef.current?.scheduleSave.flush();
     };
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        handleFlush();
-      }
+    const flushWhenHidden = () => {
+      if (document.visibilityState === "hidden") flush();
     };
-
-    window.addEventListener("pagehide", handleFlush);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", flushWhenHidden);
     return () => {
-      handleFlush();
-      window.removeEventListener("pagehide", handleFlush);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", flushWhenHidden);
     };
-  }, [debouncedServerSync]);
+  }, []);
 
   useEffect(() => {
     if (!mcpToken || isMcpExpired || !hasHydrated) return;
-    if (skipNextRemoteSyncRef.current) {
-      skipNextRemoteSyncRef.current = false;
-      return;
-    }
-    debouncedServerSync(currentResume);
-  }, [currentResume, mcpToken, isMcpExpired, hasHydrated, debouncedServerSync]);
 
-  useEffect(() => {
-    if (!mcpToken || isMcpExpired) return;
-    let isCancelled = false;
-    let hasConnectedOnce = false;
-
-    const eventSource = new EventSource("/api/resume/events");
-
-    eventSource.onopen = async () => {
-      if (isCancelled) return;
-      if (!hasConnectedOnce) {
-        hasConnectedOnce = true;
-        return;
-      }
-      try {
-        const res = await fetch("/api/resume");
-        if (res.status === 401) {
-          setIsMcpExpired(true);
-          eventSource.close();
-          return;
-        }
-        if (res.ok) {
-          const data = (await res.json()) as unknown;
-          if (!isCancelled && isValidResumeData(data)) {
-            debouncedServerSync.cancel();
-            skipNextRemoteSyncRef.current = true;
-            commitResume(data, initialData);
-          }
-        }
-      } catch {
-        // Ignore transient catch-up errors
-      }
+    const { commitResume, setStatusMessage } = useResumeStore.getState();
+    const readLocal = () => {
+      const { entries, index } = useResumeStore.getState();
+      return entries[index] ?? initialData;
     };
-
-    eventSource.addEventListener("resume-updated", (event) => {
-      try {
-        const payload = JSON.parse((event as MessageEvent<string>).data) as {
-          data?: ResumeData;
-        };
-        if (payload.data && isValidResumeData(payload.data)) {
-          debouncedServerSync.cancel();
-          skipNextRemoteSyncRef.current = true;
-          commitResume(payload.data, initialData);
-          setStatusMessage("Synced update from MCP");
-        }
-      } catch {
-        // Ignore malformed SSE payload
+    const sync = createResumeSync({
+      token: mcpToken,
+      readLocal,
+      isEditing: () =>
+        Boolean(
+          document.activeElement?.matches(
+            "main :is(input, textarea, [contenteditable=true])",
+          ),
+        ),
+      applyRemote: (data) => commitResume(data, initialData),
+      showConflict: setConflict,
+      showStatus: setStatusMessage,
+      expire: () => {
+        setIsMcpExpired(true);
+        setStatusMessage("MCP session expired. Open MCP to reconnect.");
+      },
+    });
+    syncRef.current = sync;
+    const unsubscribe = useResumeStore.subscribe((state, previous) => {
+      if (state.entries[state.index] !== previous.entries[previous.index]) {
+        sync.scheduleSave();
       }
     });
 
-    eventSource.onerror = async () => {
-      try {
-        const res = await fetch("/api/resume");
-        if (!isCancelled && res.status === 401) {
-          setIsMcpExpired(true);
-          setStatusMessage("MCP session expired — click MCP to revalidate");
-          eventSource.close();
-        }
-      } catch {
-        // Keep EventSource open for normal network reconnect
-      }
-    };
+    const events = new EventSource("/api/resume/events");
+    events.addEventListener("connected", sync.refresh);
+    events.addEventListener("resume-updated", sync.refresh);
+    events.onerror = sync.refresh;
+    window.addEventListener("online", sync.refresh);
+    sync.refresh();
 
     return () => {
-      isCancelled = true;
-      eventSource.close();
+      sync.stop();
+      syncRef.current = null;
+      events.close();
+      unsubscribe();
+      window.removeEventListener("online", sync.refresh);
     };
-  }, [
-    mcpToken,
-    isMcpExpired,
-    mcpSessionNonce,
-    commitResume,
-    initialData,
-    setStatusMessage,
-    debouncedServerSync,
-  ]);
+  }, [mcpToken, isMcpExpired, hasHydrated, initialData, sessionNonce]);
 
   return {
     mcpToken,
     isMcpExpired,
-    notifyTokenChange: (next: string | null) => {
+    conflict: mcpToken && !isMcpExpired ? conflict : null,
+    keepLocal: () => syncRef.current?.keepLocal(),
+    useRemote: () => syncRef.current?.useRemote(),
+    notifyTokenChange: () => {
+      setConflict(null);
+      setIsMcpExpired(false);
       window.dispatchEvent(new Event(MCP_COOKIE_EVENT));
-      if (!next) setIsMcpExpired(false);
     },
     notifySessionRevalidated: () => {
       setIsMcpExpired(false);
-      setMcpSessionNonce((n) => n + 1);
-      setStatusMessage("MCP session active");
+      setSessionNonce((value) => value + 1);
     },
   };
 }

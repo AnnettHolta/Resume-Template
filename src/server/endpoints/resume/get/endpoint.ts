@@ -17,6 +17,7 @@ const route = createRoute({
   responses: {
     200: {
       description: "Resume data",
+      headers: { ETag: { schema: { type: "string" } } },
       content: {
         "application/json": {
           schema: GetResumeResponseSchema,
@@ -52,6 +53,9 @@ export function registerGetResumeEndpoint(app: OpenAPIHono) {
       );
     }
 
-    return c.json(session.data, 200);
+    return c.json(session.data, 200, {
+      ETag: session.revision,
+      "Cache-Control": "no-store",
+    });
   });
 }

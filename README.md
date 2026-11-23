@@ -1,6 +1,6 @@
 # Resume Template & Editor
 
-A minimalist, client-first **Resume Template & Editor** built with Next.js 16. Edit your resume inline, store a 512×512 WebP profile photo in IndexedDB, export/import JSON, print ATS-friendly or visual PDFs, and optionally connect an AI assistant over **MCP (Model Context Protocol)** with zero server-side disk persistence.
+A minimalist, client-first **Resume Template & Editor** built with Next.js 16. Edit your resume inline, store a 512×512 WebP profile photo in IndexedDB, export/import JSON, print plain or visual PDFs, and optionally connect an AI assistant over **MCP (Model Context Protocol)** with zero server-side disk persistence.
 
 ---
 
@@ -17,13 +17,13 @@ A minimalist, client-first **Resume Template & Editor** built with Next.js 16. E
 
 - Edits are managed in **Zustand** with a **50-step Undo / Redo** stack.
 - History is automatically saved to **IndexedDB** (`idb-keyval`) with a **1-second debounce** and flushed on `pagehide` / `visibilitychange`.
-- **Import / Save / Reset:** Use the toolbar to **Import** a resume `.json` file, **Save** the current resume as JSON, or **Reset** (with confirmation) to restore the starter template and clear local IndexedDB + avatar storage.
+- **Import / Save / Reset:** Use the toolbar to **Import** a resume `.json` file, with field-level feedback for invalid data. **Save** exports the current resume as JSON. **Reset** (with confirmation) to restore the starter template and clear local IndexedDB + avatar storage.
 
 ### 3. Print / PDF Export
 
 Click **Print / PDF** in the toolbar to choose between two print modes:
 
-- **Printer-Ready:** Flat, high-contrast, ATS-friendly layout with empty fields/sections and editor controls hidden.
+- **Printer-Ready:** Flat, high-contrast text layout designed for ATS readability with empty fields/sections and editor controls hidden.
 - **Editor-Like View:** Preserves the on-screen card styling, pills, and visual accents (`html[data-print-mode="visual"]`).
 
 ---
@@ -51,7 +51,7 @@ You can let an MCP-compatible AI client read and update your resume live in the 
    POST http://localhost:3000/api/mcp
    Authorization: Bearer <your-session-token>
    ```
-3. All edits made by the AI agent stream back to the editor in real time over **SSE** (`/api/resume/events`), and edits you make in the UI sync to the session.
+3. **SSE** (`/api/resume/events`) tells the editor when the session changes. If both copies have edits, the editor preserves your draft and lets you sync it, use the session version, or download the session copy.
 
 ### Security & Privacy
 
@@ -70,7 +70,7 @@ You can let an MCP-compatible AI client read and update your resume live in the 
 ### API Endpoints
 
 - `POST /api/session` / `DELETE /api/session` — Create or disconnect an MCP session.
-- `GET /api/resume` / `PUT /api/resume` — Read or sync session resume JSON.
+- `GET /api/resume` / `PUT /api/resume` — Read or sync session resume JSON. GET returns an ETag. PUT requires that ETag in `If-Match` and returns a new ETag on success. A stale ETag returns 412 without writing.
 - `GET /api/resume/events` — Server-Sent Events stream for live MCP updates.
 - `POST /api/mcp` — Streamable HTTP MCP endpoint.
 - `GET /api/openapi.json` & `GET /api/docs` — OpenAPI 3.1 spec and Scalar API reference.

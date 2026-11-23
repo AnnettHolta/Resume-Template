@@ -1,5 +1,19 @@
 @use "@/styles/variables" as *;
 
+.printOnly {
+  display: none;
+
+  @media print {
+    display: block;
+  }
+}
+
+.hideEmptySummaryInPrint {
+  @media print {
+    display: none !important;
+  }
+}
+
 .wrapper {
   display: flex;
   flex-direction: column;

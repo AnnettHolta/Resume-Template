@@ -90,7 +90,7 @@ export function PrintModal({
             </div>
             <p className={styles.optionDesc}>
               Flat, ink-friendly layout with crisp black text, hairline
-              dividers, and optimal ATS readability.
+              dividers, and a layout designed for ATS readability.
             </p>
           </button>
 

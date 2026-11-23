@@ -1,16 +1,25 @@
 import type { ResumeData } from "@/types/resume";
+import { ResumeDataSchema } from "./resumeSchema";
 
 export const MAX_HISTORY_LENGTH = 50;
 
 export function isValidResumeData(value: unknown): value is ResumeData {
-  if (!value || typeof value !== "object") return false;
-  const candidate = value as Partial<ResumeData>;
-  return (
-    Boolean(candidate.profile && typeof candidate.profile.name === "string") &&
-    Array.isArray(candidate.experience) &&
-    Array.isArray(candidate.education) &&
-    Array.isArray(candidate.skills)
-  );
+  return ResumeDataSchema.safeParse(value).success;
+}
+
+export function parseResumeJson(text: string): ResumeData {
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    throw new Error("The file contains invalid JSON.");
+  }
+  const result = ResumeDataSchema.safeParse(value);
+  if (result.success) return result.data;
+
+  const issue = result.error.issues[0];
+  const field = issue.path.join(".") || "resume";
+  throw new Error(`Invalid resume field "${field}": ${issue.message}`);
 }
 
 export function downloadResumeJson(data: ResumeData): void {

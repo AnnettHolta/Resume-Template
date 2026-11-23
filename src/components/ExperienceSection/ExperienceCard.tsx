@@ -166,7 +166,16 @@ export function ExperienceCard({
                   commitItem(nextDraft);
                 }}
               />
-              <span aria-hidden="true">–</span>
+              <span
+                className={
+                  draft.startDate.trim() && draft.endDate.trim()
+                    ? undefined
+                    : "no-print"
+                }
+                aria-hidden="true"
+              >
+                –
+              </span>
               <DatePickerBadge
                 value={draft.endDate}
                 allowPresent
@@ -179,7 +188,10 @@ export function ExperienceCard({
               />
               <span
                 className={`${styles.separator} ${
-                  !draft.location.trim() ? "no-print" : ""
+                  !draft.location.trim() ||
+                  !(draft.startDate.trim() || draft.endDate.trim())
+                    ? "no-print"
+                    : ""
                 }`}
                 aria-hidden="true"
               >

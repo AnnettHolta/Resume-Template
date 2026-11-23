@@ -28,7 +28,7 @@ export function ResumeHeaderForm({
   };
 
   return (
-    <div className={styles.editStack}>
+    <div className={`${styles.editStack} no-print`}>
       <label className={styles.fieldLabel}>
         <span>Full Name</span>
         <input

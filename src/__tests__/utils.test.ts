@@ -1,14 +1,44 @@
 import { describe, expect, it } from "vitest";
+import initialResume from "@/data/resume.json";
 import { findSkillCatalogItem, SKILLS_CATALOG } from "@/data/skillsCatalog";
 import {
   displayMonthToInputValue,
   inputValueToDisplayMonth,
 } from "@/lib/dateFormat";
+import { parseResumeJson } from "@/lib/resumeStorage";
 import {
   extractMcpToken,
   isHttpsRequest,
   isValidMcpToken,
 } from "@/server/storage/tokenUtils";
+
+describe("resume JSON import", () => {
+  it("round-trips the starter resume in the export format", () => {
+    expect(parseResumeJson(JSON.stringify(initialResume, null, 2))).toEqual(
+      initialResume,
+    );
+  });
+
+  it("reports the location of invalid nested data", () => {
+    const invalid = structuredClone(initialResume);
+    const data = {
+      ...invalid,
+      experience: [{ ...invalid.experience[0], bullets: [42] }],
+    };
+    expect(() => parseResumeJson(JSON.stringify(data))).toThrow(
+      "experience.0.bullets.0",
+    );
+  });
+
+  it("rejects malformed JSON and resumes that lack required fields", () => {
+    expect(() => parseResumeJson("{")).toThrow("invalid JSON");
+    expect(() =>
+      parseResumeJson(
+        JSON.stringify({ ...initialResume, profile: { name: "Name" } }),
+      ),
+    ).toThrow("profile.headline");
+  });
+});
 
 describe("skillsCatalog", () => {
   it("resolves aliases like css, ts, k8s, postgres to canonical skills", () => {

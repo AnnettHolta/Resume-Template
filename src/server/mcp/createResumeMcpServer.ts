@@ -1,10 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { findSkillCatalogItem } from "@/data/skillsCatalog";
-import {
-  EducationItemSchema,
-  ExperienceItemSchema,
-} from "@/server/schemas/resumeSchemas";
+import { EducationItemSchema, ExperienceItemSchema } from "@/lib/resumeSchema";
 import {
   readSessionResume,
   writeSessionResume,

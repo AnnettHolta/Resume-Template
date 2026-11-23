@@ -55,7 +55,10 @@ export function registerCreateSessionEndpoint(app: OpenAPIHono) {
     const existingToken = extractMcpToken(c.req.raw.headers);
 
     if (existingToken && !regenerate) {
-      if (isSessionActive(existingToken) || revalidate) {
+      if (isSessionActive(existingToken)) {
+        return c.json({ token: existingToken, active: true }, 200);
+      }
+      if (revalidate) {
         await activateSession(existingToken, initialResume);
         return c.json({ token: existingToken, active: true }, 200);
       }
@@ -63,9 +66,7 @@ export function registerCreateSessionEndpoint(app: OpenAPIHono) {
 
     let seedResume = initialResume;
     if (existingToken && regenerate) {
-      if (!seedResume) {
-        seedResume = readSessionResume(existingToken)?.data;
-      }
+      seedResume = readSessionResume(existingToken)?.data ?? seedResume;
       revokeSession(existingToken);
     }
 

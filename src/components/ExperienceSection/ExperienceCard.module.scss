@@ -30,7 +30,7 @@
     box-shadow: none !important;
 
     :global(html[data-print-mode="visual"]) & {
-      padding: 1rem 1.15rem;
+      padding: 0.75rem 1.15rem;
       border: 1px solid $color-border-subtle;
       border-radius: $radius-md;
       background: $color-bg-sheet;

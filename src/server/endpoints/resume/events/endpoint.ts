@@ -11,7 +11,7 @@ const route = createRoute({
   method: "get",
   path: "/resume/events",
   tags: ["Resume"],
-  summary: "Subscribe to live MCP resume updates via Server-Sent Events",
+  summary: "Subscribe to live resume updates via Server-Sent Events",
   responses: {
     200: {
       description: "SSE stream of resume update events",
@@ -38,13 +38,7 @@ export function registerResumeEventsEndpoint(app: OpenAPIHono) {
     }
 
     return streamSSE(c, async (stream) => {
-      await stream.writeSSE({
-        event: "connected",
-        data: JSON.stringify({ connected: true }),
-      });
-
       const unsubscribe = subscribeToResumeUpdates(token, (event) => {
-        if (event.source !== "mcp") return;
         void stream.writeSSE({
           event: "resume-updated",
           data: JSON.stringify(event),
@@ -63,9 +57,14 @@ export function registerResumeEventsEndpoint(app: OpenAPIHono) {
         unsubscribe();
       });
 
-      await new Promise<void>((resolve) => {
+      const aborted = new Promise<void>((resolve) => {
         stream.onAbort(() => resolve());
       });
+      await stream.writeSSE({
+        event: "connected",
+        data: JSON.stringify({ connected: true }),
+      });
+      await aborted;
     });
   });
 }

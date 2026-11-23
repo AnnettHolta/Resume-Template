@@ -42,6 +42,10 @@
     box-shadow: none;
     padding: 0;
     gap: 1.25rem;
+
+    :global(html[data-print-mode="visual"]) & {
+      gap: 1rem;
+    }
   }
 }
 
@@ -50,4 +54,34 @@
   text-align: center;
   font-size: 0.75rem;
   color: $color-text-secondary;
+}
+
+.conflict {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid $color-border-default;
+  border-radius: $radius-md;
+  background: $color-bg-sheet;
+
+  h2 {
+    font-size: 1rem;
+  }
+
+  p {
+    margin-block: 0.25rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+.conflictActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+
+  button {
+    padding: 0.4rem 0.65rem;
+    border: 1px solid $color-border-default;
+    border-radius: $radius-md;
+    background: $color-bg-sheet;
+  }
 }

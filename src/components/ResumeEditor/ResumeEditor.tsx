@@ -7,7 +7,7 @@ import type {
   ResumeData,
   ResumeProfile,
 } from "@/types/resume";
-import { downloadResumeJson, isValidResumeData } from "@/lib/resumeStorage";
+import { downloadResumeJson, parseResumeJson } from "@/lib/resumeStorage";
 import { useMcpSync } from "@/hooks/useMcpSync";
 import { useResumeStore } from "@/store/useResumeStore";
 import { Toolbar } from "@/components/Toolbar/Toolbar";
@@ -47,28 +47,26 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
   const {
     mcpToken,
     isMcpExpired,
+    conflict,
+    keepLocal,
+    useRemote,
     notifyTokenChange,
     notifySessionRevalidated,
-  } = useMcpSync({
-    currentResume,
-    initialData,
-    hasHydrated,
-    commitResume,
-    setStatusMessage,
-  });
+  } = useMcpSync(initialData, hasHydrated);
 
   const handleImportJson = async (file: File) => {
+    const text = await file.text().catch(() => null);
+    if (text === null) {
+      setStatusMessage("Could not read the resume file.");
+      return;
+    }
     try {
-      const text = await file.text();
-      const parsed: unknown = JSON.parse(text);
-      if (!isValidResumeData(parsed)) {
-        setStatusMessage("Invalid resume JSON format");
-        return;
-      }
-      commitResume(parsed, initialData);
+      commitResume(parseResumeJson(text), initialData);
       setStatusMessage("Imported JSON");
-    } catch {
-      setStatusMessage("Failed to parse JSON file");
+    } catch (error) {
+      setStatusMessage(
+        error instanceof Error ? error.message : "Import failed.",
+      );
     }
   };
 
@@ -106,6 +104,34 @@ export function ResumeEditor({ initialData }: ResumeEditorProps) {
       />
 
       <main className={styles.canvas}>
+        {conflict && (
+          <section
+            className={`${styles.conflict} no-print`}
+            aria-labelledby="sync-conflict"
+          >
+            <div role="status">
+              <h2 id="sync-conflict">Two versions of this resume</h2>
+              <p>
+                Your editor draft is still here. Choose which version to sync,
+                or download the session copy to review it.
+              </p>
+            </div>
+            <div className={styles.conflictActions}>
+              <button type="button" onClick={keepLocal}>
+                Sync editor draft
+              </button>
+              <button type="button" onClick={useRemote}>
+                Use session version
+              </button>
+              <button
+                type="button"
+                onClick={() => downloadResumeJson(conflict)}
+              >
+                Download session copy
+              </button>
+            </div>
+          </section>
+        )}
         <div className={styles.sheet}>
           <ResumeHeader
             profile={currentResume.profile}

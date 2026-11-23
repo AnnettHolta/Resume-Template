@@ -1,4 +1,5 @@
 import { promises as fs } from "node:fs";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import type { ResumeData } from "@/types/resume";
 import { hashMcpToken, isValidMcpToken } from "./tokenUtils";
@@ -18,6 +19,7 @@ export interface ResumeUpdateEvent {
 interface RuntimeSessionEntry {
   data: ResumeData;
   version: number;
+  revision: string;
   expiresAt: number;
 }
 
@@ -80,6 +82,7 @@ export async function activateSession(
   sessionStore.set(key, {
     data,
     version: existing ? existing.version + 1 : 1,
+    revision: `"${randomUUID()}"`,
     expiresAt: Date.now() + SESSION_TTL_MS,
   });
 }
@@ -87,30 +90,40 @@ export async function activateSession(
 export function readSessionResume(token: string): {
   data: ResumeData;
   version: number;
+  revision: string;
 } | null {
   if (!isValidMcpToken(token)) return null;
   pruneExpiredSessions();
   const entry = sessionStore.get(hashMcpToken(token));
   if (!entry) return null;
   entry.expiresAt = Date.now() + SESSION_TTL_MS;
-  return { data: entry.data, version: entry.version };
+  return { data: entry.data, version: entry.version, revision: entry.revision };
 }
 
 export function writeSessionResume(
   token: string,
   data: ResumeData,
   source: ResumeUpdateSource,
-): number | null {
+  expectedRevision?: string,
+): { revision: string } | "conflict" | null {
   if (!isValidMcpToken(token)) return null;
   pruneExpiredSessions();
   const key = hashMcpToken(token);
   const existing = sessionStore.get(key);
   if (!existing) return null;
+  if (
+    expectedRevision !== undefined &&
+    expectedRevision !== existing.revision
+  ) {
+    return "conflict";
+  }
 
   const nextVersion = existing.version + 1;
+  const revision = `"${randomUUID()}"`;
   sessionStore.set(key, {
     data,
     version: nextVersion,
+    revision,
     expiresAt: Date.now() + SESSION_TTL_MS,
   });
 
@@ -127,7 +140,7 @@ export function writeSessionResume(
     }
   }
 
-  return nextVersion;
+  return { revision };
 }
 
 export function revokeSession(token: string): void {

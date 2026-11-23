@@ -37,7 +37,7 @@ export function DatePickerBadge({
   return (
     <span className={styles.wrapper}>
       <label
-        className={styles.label}
+        className={`${styles.label} ${value.trim() ? "" : "no-print"}`}
         onClick={openPicker}
         data-tooltip="Change date"
         data-tooltip-position="top"
