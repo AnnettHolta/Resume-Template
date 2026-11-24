@@ -1,4 +1,4 @@
-﻿import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import {
@@ -7,6 +7,7 @@ import {
   type ResumeCommand,
 } from "@/lib/resumeCommands";
 import { EducationItemSchema, ExperienceItemSchema } from "@/lib/resumeSchema";
+import { sanitizeResumeForAgent } from "@/lib/resumeSanitize";
 import { requestEditor } from "@/server/storage/editorSessions";
 
 export function createResumeMcpServer(token: string): McpServer {
@@ -46,8 +47,12 @@ export function createResumeMcpServer(token: string): McpServer {
         ],
       };
     }
+    const payload =
+      result.status === "read" || result.status === "applied"
+        ? { ...result, resume: sanitizeResumeForAgent(result.resume) }
+        : result;
     return {
-      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
     };
   }
 

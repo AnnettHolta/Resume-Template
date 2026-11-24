@@ -109,10 +109,14 @@
 }
 
 .imageUrlBar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   margin-bottom: 0.5rem;
 
-  input {
-    width: 100%;
+  input[type="url"] {
+    flex: 1;
+    min-width: 0;
     padding: 0.4rem 0.65rem;
     border: 1px solid $color-accent-blue;
     border-radius: $radius-sm;
@@ -122,6 +126,33 @@
     &:focus {
       outline: none;
     }
+  }
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.logoActionBtn {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid $color-border-default;
+  border-radius: $radius-sm;
+  background: $color-bg-sheet;
+  color: $color-text-secondary;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+
+  &:hover {
+    border-color: $color-text-muted;
+    color: $color-text-primary;
+    background: $color-bg-subtle;
   }
 }
 

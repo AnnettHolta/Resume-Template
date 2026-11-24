@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState, type DragEvent } from "react";
-import { Building2, ImagePlus } from "lucide-react";
 import type { ExperienceItem } from "@/types/resume";
 import { DatePickerBadge } from "@/components/DatePickerBadge/DatePickerBadge";
 import { ExperienceBullets } from "./ExperienceBullets";
 import { ExperienceCardActions } from "./ExperienceCardActions";
+import { ExperienceLogoBar, ExperienceLogoBox } from "./ExperienceLogoPicker";
 import { ExperienceSkills } from "./ExperienceSkills";
 import styles from "./ExperienceCard.module.scss";
 
@@ -37,7 +37,6 @@ export function ExperienceCard({
   const [draft, setDraft] = useState<ExperienceItem>(item);
   const [prevItem, setPrevItem] = useState<ExperienceItem>(item);
   const [showImageInput, setShowImageInput] = useState(false);
-  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
   const [isDragArmed, setIsDragArmed] = useState(false);
 
   useEffect(() => {
@@ -68,10 +67,6 @@ export function ExperienceCard({
     [onCommit],
   );
 
-  const trimmedLogoSrc = draft.companyImageUrl.trim();
-  const showImage =
-    Boolean(trimmedLogoSrc) && failedImageUrl !== trimmedLogoSrc;
-
   return (
     <article
       className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${
@@ -92,62 +87,26 @@ export function ExperienceCard({
         onDragEnd?.();
       }}
     >
-      <div className={styles.logoColumn}>
-        <button
-          type="button"
-          className={styles.logoBox}
-          onClick={() => setShowImageInput((prev) => !prev)}
-          data-tooltip="Set company logo URL"
-          data-tooltip-position="top"
-          aria-label="Edit company logo URL"
-        >
-          {showImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={trimmedLogoSrc}
-              alt={`${draft.company} logo`}
-              className={styles.logoImg}
-              onError={() => setFailedImageUrl(trimmedLogoSrc)}
-            />
-          ) : (
-            <Building2 size={22} strokeWidth={1.5} />
-          )}
-          <span
-            className={`${styles.logoEditHint} no-print`}
-            aria-hidden="true"
-          >
-            <ImagePlus size={12} />
-          </span>
-        </button>
-      </div>
+      <ExperienceLogoBox
+        company={draft.company}
+        imageUrl={draft.companyImageUrl}
+        onToggleEditor={() => setShowImageInput((prev) => !prev)}
+      />
 
       <div className={styles.content}>
         {showImageInput && (
-          <div className={`${styles.imageUrlBar} no-print`}>
-            <input
-              type="url"
-              value={draft.companyImageUrl}
-              onChange={(e) => {
-                setFailedImageUrl(null);
-                setDraft((prev) => ({
-                  ...prev,
-                  companyImageUrl: e.target.value,
-                }));
-              }}
-              onBlur={() => {
-                commitItem(draft);
-                setShowImageInput(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.currentTarget.blur();
-                }
-              }}
-              placeholder="Paste company logo image URL..."
-              aria-label="Company logo image URL"
-              autoFocus
-            />
-          </div>
+          <ExperienceLogoBar
+            imageUrl={draft.companyImageUrl}
+            onChangeUrl={(nextUrl) =>
+              setDraft((prev) => ({ ...prev, companyImageUrl: nextUrl }))
+            }
+            onCommitUrl={(nextUrl) => {
+              const nextDraft = { ...draft, companyImageUrl: nextUrl };
+              setDraft(nextDraft);
+              commitItem(nextDraft);
+            }}
+            onClose={() => setShowImageInput(false)}
+          />
         )}
 
         <div className={styles.headerRow}>

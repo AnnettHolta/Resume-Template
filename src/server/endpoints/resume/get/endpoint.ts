@@ -4,6 +4,7 @@ import {
   requestEditor,
 } from "@/server/storage/editorSessions";
 import { extractMcpToken } from "@/server/storage/tokenUtils";
+import { sanitizeResumeForAgent } from "@/lib/resumeSanitize";
 import {
   GetResumeResponseSchema,
   UnauthorizedResponseSchema,
@@ -61,7 +62,7 @@ export function registerGetResumeEndpoint(app: OpenAPIHono) {
       );
     }
 
-    return c.json(result.resume, 200, {
+    return c.json(sanitizeResumeForAgent(result.resume), 200, {
       ETag: `"${result.revision}"`,
       "Cache-Control": "no-store",
     });

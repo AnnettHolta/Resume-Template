@@ -179,17 +179,34 @@ export function applyResumeEdit(
       break;
     }
     case "upsert_experience":
-    case "delete_experience":
+    case "delete_experience": {
+      const incoming =
+        edit.type === "upsert_experience"
+          ? (() => {
+              const prev = base.experience.find((e) => e.id === edit.item.id);
+              if (
+                prev?.companyImageUrl
+                  .trim()
+                  .toLowerCase()
+                  .startsWith("data:") &&
+                edit.item.companyImageUrl === ""
+              ) {
+                return { ...edit.item, companyImageUrl: prev.companyImageUrl };
+              }
+              return edit.item;
+            })()
+          : undefined;
       next.experience = editEntries(
         base.experience,
         local.experience,
         edit.type === "upsert_experience"
-          ? { id: edit.item.id, value: edit.item }
+          ? { id: edit.item.id, value: incoming }
           : edit,
         "experience",
         fields,
       );
       break;
+    }
     case "upsert_education":
     case "delete_education":
       next.education = editEntries(
