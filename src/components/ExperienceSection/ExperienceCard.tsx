@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useState, type DragEvent } from "react";
+import { useCallback, useEffect, useState, type DragEvent } from "react";
 import { Building2, ImagePlus } from "lucide-react";
 import type { ExperienceItem } from "@/types/resume";
 import { DatePickerBadge } from "@/components/DatePickerBadge/DatePickerBadge";
 import { ExperienceBullets } from "./ExperienceBullets";
 import { ExperienceCardActions } from "./ExperienceCardActions";
+import { ExperienceSkills } from "./ExperienceSkills";
 import styles from "./ExperienceCard.module.scss";
 
 interface ExperienceCardProps {
@@ -37,6 +38,18 @@ export function ExperienceCard({
   const [prevItem, setPrevItem] = useState<ExperienceItem>(item);
   const [showImageInput, setShowImageInput] = useState(false);
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const [isDragArmed, setIsDragArmed] = useState(false);
+
+  useEffect(() => {
+    if (!isDragArmed) return;
+    const reset = () => setIsDragArmed(false);
+    window.addEventListener("pointerup", reset);
+    window.addEventListener("pointercancel", reset);
+    return () => {
+      window.removeEventListener("pointerup", reset);
+      window.removeEventListener("pointercancel", reset);
+    };
+  }, [isDragArmed]);
 
   if (item !== prevItem) {
     setPrevItem(item);
@@ -65,11 +78,19 @@ export function ExperienceCard({
         isDropTarget ? styles.cardDropTarget : ""
       }`}
       data-experience-id={item.id}
-      draggable={isDraggable}
+      draggable={isDraggable && isDragArmed}
+      onPointerDown={(e) => {
+        if (!isDraggable) return;
+        const target = e.target as HTMLElement | null;
+        setIsDragArmed(Boolean(target?.closest("[data-drag-handle]")));
+      }}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}
-      onDragEnd={onDragEnd}
+      onDragEnd={() => {
+        setIsDragArmed(false);
+        onDragEnd?.();
+      }}
     >
       <div className={styles.logoColumn}>
         <button
@@ -253,6 +274,16 @@ export function ExperienceCard({
             if (commitNow) commitItem(nextDraft);
           }}
           onBlurCommit={() => commitItem(draft)}
+        />
+
+        <ExperienceSkills
+          itemId={item.id}
+          skills={draft.skills ?? []}
+          onChangeSkills={(nextSkills) => {
+            const nextDraft = { ...draft, skills: nextSkills };
+            setDraft(nextDraft);
+            commitItem(nextDraft);
+          }}
         />
       </div>
     </article>

@@ -160,6 +160,9 @@ function ResumeEditorContent({ initialData }: ResumeEditorProps) {
             />
             <SkillsSection
               skills={currentResume.skills}
+              experienceSkills={currentResume.experience.flatMap(
+                (exp) => exp.skills ?? [],
+              )}
               onChange={(skills) => commitSection({ skills })}
               canEdit={isWriter}
             />

@@ -26,6 +26,7 @@ export const ExperienceItemSchema = z.object({
   startDate: z.string(),
   endDate: z.string(),
   bullets: z.array(z.string()),
+  skills: z.array(z.string()).optional(),
 });
 
 export const EducationItemSchema = z.object({

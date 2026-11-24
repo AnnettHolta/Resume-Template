@@ -29,19 +29,25 @@ const sampleItems: ExperienceItem[] = [
 ];
 
 describe("ExperienceSection", () => {
-  it("supports drag-and-drop reordering when multiple items exist", () => {
+  it("supports drag-and-drop reordering only via the drag handle when multiple items exist", () => {
     const onChange = vi.fn();
     render(<ExperienceSection items={sampleItems} onChange={onChange} />);
 
     const cards = screen.getAllByRole("article");
+    const handles = screen.getAllByRole("img", {
+      name: "Drag to reorder experience",
+    });
     expect(cards).toHaveLength(2);
-    expect(cards[0]).toHaveAttribute("draggable", "true");
+    expect(cards[0]).toHaveAttribute("draggable", "false");
 
     const dataTransfer = {
       effectAllowed: "move",
       dropEffect: "move",
       setData: vi.fn(),
     };
+
+    fireEvent.pointerDown(handles[0]);
+    expect(cards[0]).toHaveAttribute("draggable", "true");
 
     fireEvent.dragStart(cards[0], { dataTransfer });
     fireEvent.dragOver(cards[1], { dataTransfer });
@@ -58,6 +64,9 @@ describe("ExperienceSection", () => {
         canEdit={false}
       />,
     );
+    expect(
+      screen.queryByRole("img", { name: "Drag to reorder experience" }),
+    ).not.toBeInTheDocument();
     expect(screen.getAllByRole("article")[0]).toHaveAttribute(
       "draggable",
       "false",
@@ -65,5 +74,29 @@ describe("ExperienceSection", () => {
 
     rerender(<ExperienceSection items={[sampleItems[0]]} onChange={vi.fn()} />);
     expect(screen.getByRole("article")).toHaveAttribute("draggable", "false");
+  });
+
+  it("keeps draggable disabled when interacting with inputs or card body", () => {
+    render(<ExperienceSection items={sampleItems} onChange={vi.fn()} />);
+
+    const firstCard = screen.getAllByRole("article")[0];
+    const titleInput = screen.getAllByRole("textbox", {
+      name: "Role or title",
+    })[0];
+    const handle = screen.getAllByRole("img", {
+      name: "Drag to reorder experience",
+    })[0];
+
+    fireEvent.pointerDown(titleInput);
+    expect(firstCard).toHaveAttribute("draggable", "false");
+
+    fireEvent.pointerDown(firstCard);
+    expect(firstCard).toHaveAttribute("draggable", "false");
+
+    fireEvent.pointerDown(handle);
+    expect(firstCard).toHaveAttribute("draggable", "true");
+
+    fireEvent.pointerUp(window);
+    expect(firstCard).toHaveAttribute("draggable", "false");
   });
 });

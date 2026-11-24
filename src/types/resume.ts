@@ -24,6 +24,7 @@ export interface ExperienceItem {
   startDate: string;
   endDate: string;
   bullets: string[];
+  skills?: string[];
 }
 
 export interface EducationItem {

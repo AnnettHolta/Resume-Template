@@ -18,6 +18,7 @@ export function ExperienceCardActions({
         <span
           className={styles.dragHandle}
           role="img"
+          data-drag-handle="true"
           aria-label="Drag to reorder experience"
           data-tooltip="Drag to reorder"
           data-tooltip-position="left"

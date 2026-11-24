@@ -55,6 +55,7 @@ export function ExperienceSection({
       startDate: "Jan 2025",
       endDate: "Present",
       bullets: ["Describe your key impact and responsibilities."],
+      skills: [],
     };
     onChange([newItem, ...items]);
   };

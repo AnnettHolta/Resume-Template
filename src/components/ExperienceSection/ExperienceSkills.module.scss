@@ -1,0 +1,90 @@
+@use "@/styles/variables" as *;
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.65rem;
+}
+
+.skillList {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.skillTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.22rem 0.6rem;
+  border: 1px solid $color-border-subtle;
+  border-radius: $radius-pill;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: $color-text-primary;
+  background: $color-bg-subtle;
+  white-space: nowrap;
+  cursor: grab;
+  user-select: none;
+  transition:
+    border-color 0.15s ease,
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    background-color 0.15s ease;
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  @media print {
+    background: transparent;
+    border-color: #d4d4d4;
+    padding: 0.12rem 0.45rem;
+    color: #000000;
+    cursor: default;
+
+    :global(html[data-print-mode="visual"]) & {
+      background: $color-bg-subtle;
+      border-color: $color-border-subtle;
+      padding: 0.2rem 0.55rem;
+      color: $color-text-primary;
+    }
+  }
+}
+
+.skillTagDragging {
+  opacity: 0.45;
+  transform: scale(0.96);
+}
+
+.skillTagDropTarget {
+  border-color: $color-accent-blue;
+  background: $color-accent-blue-soft;
+}
+
+.skillName {
+  line-height: 1.25;
+}
+
+.removeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: $color-text-muted;
+  padding: 0.08rem;
+
+  &:hover {
+    color: $color-danger;
+  }
+}
+
+.autocompleteWrap {
+  :global(input) {
+    font-size: 0.8125rem;
+    padding: 0.36rem 0.65rem;
+  }
+}

@@ -26,6 +26,14 @@
         "Architected and delivered a multi-tenant analytics dashboard serving 120k+ monthly active users with 99.95% uptime.",
         "Reduced API p95 latency by 42% through query optimization, Redis caching, and streaming server responses.",
         "Mentored 5 engineers through code reviews, design docs, and bi-weekly architecture sessions."
+      ],
+      "skills": [
+        "Node.js",
+        "TypeScript",
+        "React",
+        "Next.js",
+        "PostgreSQL",
+        "Redis"
       ]
     },
     {
@@ -40,7 +48,8 @@
       "bullets": [
         "Built and maintained customer-facing TypeScript and React applications with full WCAG 2.1 AA compliance.",
         "Implemented automated CI/CD pipelines and end-to-end test suites, cutting release regressions by 60%."
-      ]
+      ],
+      "skills": ["TypeScript", "React", "Playwright"]
     },
     {
       "id": "exp-3",
@@ -54,7 +63,8 @@
       "bullets": [
         "Developed responsive marketing and e-commerce interfaces using semantic HTML, SCSS, and modern JavaScript.",
         "Collaborated with product designers to standardize reusable UI component libraries."
-      ]
+      ],
+      "skills": ["HTML5", "SCSS", "JavaScript"]
     }
   ],
   "education": [
@@ -67,16 +77,5 @@
       "endDate": "2018"
     }
   ],
-  "skills": [
-    "TypeScript",
-    "React",
-    "Next.js",
-    "Node.js",
-    "PostgreSQL",
-    "GraphQL",
-    "SCSS",
-    "Docker",
-    "AWS",
-    "System Design"
-  ]
+  "skills": ["GraphQL", "Docker", "AWS", "System Design"]
 }
