@@ -74,4 +74,26 @@ export const FRONTEND_LIB_SKILLS: SkillCatalogItem[] = [
     iconUrl: devicon("lodash"),
     aliases: ["lodash-es"],
   },
+  {
+    name: "jQuery",
+    category: "Frontend lib",
+    iconUrl: devicon("jquery"),
+  },
+  {
+    name: "React Router",
+    category: "Frontend lib",
+    iconUrl: devicon("reactrouter"),
+  },
+  {
+    name: "Framer Motion",
+    category: "Frontend lib",
+    iconUrl: devicon("framermotion"),
+    aliases: ["motion"],
+  },
+  {
+    name: "shadcn/ui",
+    category: "Frontend lib",
+    iconUrl: "https://cdn.simpleicons.org/shadcnui/000000",
+    aliases: ["shadcn"],
+  },
 ];
