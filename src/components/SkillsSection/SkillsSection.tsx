@@ -3,6 +3,7 @@
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { findSkillCatalogItem } from "@/data/skillsCatalog";
+import { mergeExperienceAndCustomSkills } from "@/lib/skillUtils";
 import { GeneralConfirmModal } from "@/components/GeneralConfirmModal/GeneralConfirmModal";
 import { SkillAutocomplete } from "./SkillAutocomplete";
 import { SkillIcon } from "./SkillIcon";
@@ -10,12 +11,14 @@ import styles from "./SkillsSection.module.scss";
 
 interface SkillsSectionProps {
   skills: string[];
+  experienceSkills?: string[];
   onChange: (nextSkills: string[]) => void;
   canEdit?: boolean;
 }
 
 export function SkillsSection({
   skills,
+  experienceSkills,
   onChange,
   canEdit = true,
 }: SkillsSectionProps) {
@@ -36,9 +39,25 @@ export function SkillsSection({
     moveFocus.current = null;
   }, [skills]);
 
+  const isCategorySorted = experienceSkills !== undefined;
+
+  const { displayedSkills, experienceSkillSet } = useMemo(() => {
+    if (!isCategorySorted) {
+      return {
+        displayedSkills: skills,
+        experienceSkillSet: new Set<string>(),
+      };
+    }
+    const merged = mergeExperienceAndCustomSkills(experienceSkills, skills);
+    return {
+      displayedSkills: merged.allSkills,
+      experienceSkillSet: merged.experienceSkillSet,
+    };
+  }, [isCategorySorted, experienceSkills, skills]);
+
   const normalizedExisting = useMemo(
-    () => new Set(skills.map((s) => s.trim().toLowerCase())),
-    [skills],
+    () => new Set(displayedSkills.map((s) => s.trim().toLowerCase())),
+    [displayedSkills],
   );
 
   const handleAddSkill = (resolvedSkill: string) => {
@@ -75,14 +94,14 @@ export function SkillsSection({
 
   return (
     <section
-      className={`${styles.section} ${skills.length === 0 ? "no-print" : ""}`}
+      className={`${styles.section} ${displayedSkills.length === 0 ? "no-print" : ""}`}
       aria-labelledby="skills-heading"
     >
       <div className={styles.header}>
         <h2 id="skills-heading" className={styles.heading}>
           Skills
         </h2>
-        {(skills.length > 1 || isReordering) && (
+        {!isCategorySorted && (displayedSkills.length > 1 || isReordering) && (
           <button
             type="button"
             className={`${styles.reorderToggle} no-print`}
@@ -100,9 +119,10 @@ export function SkillsSection({
       <ul
         className={`${styles.skillList} ${isReordering ? styles.reordering : ""}`}
       >
-        {skills.map((skill, idx) => {
+        {displayedSkills.map((skill, idx) => {
           const catalogItem = findSkillCatalogItem(skill);
           const lowercaseSkill = skill.toLowerCase();
+          const isFromExperience = experienceSkillSet.has(lowercaseSkill);
           const shouldAnimate = animatedSkills.has(skill);
           const isDragging = draggedIndex === idx;
           const isDropTarget =
@@ -111,8 +131,8 @@ export function SkillsSection({
             draggedIndex !== idx;
           return (
             <li
-              key={skill}
-              draggable={canEdit && !isReordering}
+              key={lowercaseSkill}
+              draggable={canEdit && !isReordering && !isCategorySorted}
               aria-label={lowercaseSkill}
               data-skill={lowercaseSkill}
               onDragStart={(e) => {
@@ -179,7 +199,7 @@ export function SkillsSection({
                     <ArrowDown size={16} aria-hidden="true" />
                   </button>
                 </div>
-              ) : (
+              ) : !isFromExperience ? (
                 <button
                   type="button"
                   className={`${styles.removeBtn} no-print`}
@@ -191,7 +211,7 @@ export function SkillsSection({
                 >
                   <X size={12} aria-hidden="true" />
                 </button>
-              )}
+              ) : null}
             </li>
           );
         })}

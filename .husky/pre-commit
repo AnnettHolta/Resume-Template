@@ -1,1 +1,6 @@
+npm run format
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+if [ -n "$staged" ]; then
+  printf '%s\n' "$staged" | xargs git add --
+fi
 npm run check

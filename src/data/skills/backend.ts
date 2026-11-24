@@ -57,4 +57,14 @@ export const BACKEND_SKILLS: SkillCatalogItem[] = [
     aliases: ["rails"],
   },
   { name: "Laravel", category: "Backend", iconUrl: devicon("laravel") },
+  { name: "PHP", category: "Language", iconUrl: devicon("php") },
+  { name: "Ruby", category: "Language", iconUrl: devicon("ruby") },
+  { name: "Elixir", category: "Language", iconUrl: devicon("elixir") },
+  { name: "Phoenix", category: "Backend", iconUrl: devicon("phoenix") },
+  {
+    name: "ASP.NET Core",
+    category: "Backend",
+    iconUrl: devicon("dotnetcore"),
+    aliases: ["aspnet", "asp.net"],
+  },
 ];

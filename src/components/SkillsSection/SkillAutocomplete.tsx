@@ -9,11 +9,15 @@ import styles from "./SkillAutocomplete.module.scss";
 interface SkillAutocompleteProps {
   existingSkills: Set<string>;
   onAddSkill: (resolvedSkill: string) => void;
+  listboxId?: string;
+  placeholder?: string;
 }
 
 export function SkillAutocomplete({
   existingSkills,
   onAddSkill,
+  listboxId = "skills-suggestions-listbox",
+  placeholder = "Add a skill (e.g. Docker, React)",
 }: SkillAutocompleteProps) {
   const [newSkill, setNewSkill] = useState("");
   const [isFocused, setIsFocused] = useState(false);
@@ -88,10 +92,10 @@ export function SkillAutocomplete({
               }
             }
           }}
-          placeholder="Add a skill (e.g. Docker, React)"
+          placeholder={placeholder}
           aria-label="New skill"
           aria-expanded={isDropdownOpen}
-          aria-controls="skills-suggestions-listbox"
+          aria-controls={listboxId}
           aria-autocomplete="list"
           role="combobox"
         />
@@ -102,7 +106,7 @@ export function SkillAutocomplete({
       </div>
 
       <ul
-        id="skills-suggestions-listbox"
+        id={listboxId}
         className={`${styles.dropdown} ${
           isDropdownOpen ? styles.dropdownOpen : ""
         }`}

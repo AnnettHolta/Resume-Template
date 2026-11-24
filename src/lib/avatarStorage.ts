@@ -5,6 +5,8 @@ import { getEditorWriteStore } from "./resumeWriterLease";
 export const AVATAR_BLOB_KEY = "resume-template-avatar-v1";
 export const AVATAR_SIZE_PX = 512;
 export const AVATAR_WEBP_QUALITY = 0.8;
+export const COMPANY_LOGO_SIZE_PX = 96;
+export const COMPANY_LOGO_WEBP_QUALITY = 0.6;
 export const AVATAR_CHANGED_EVENT = "resume-avatar-changed";
 
 interface DecodedImage {
@@ -107,6 +109,58 @@ export async function compressImageToWebpBlob(file: File): Promise<Blob> {
     }
 
     throw new Error("Failed to encode image blob");
+  } finally {
+    decoded.cleanup();
+  }
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("Failed to read encoded image"));
+    };
+    reader.onerror = () => reject(new Error("Failed to read encoded image"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+export async function compressImageToWebpDataUrl(
+  file: File,
+  size = COMPANY_LOGO_SIZE_PX,
+  quality = COMPANY_LOGO_WEBP_QUALITY,
+): Promise<string> {
+  const decoded = await decodeImage(file);
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error("Canvas 2D context is unavailable");
+    }
+
+    const scale = Math.min(size / decoded.width, size / decoded.height);
+    const dw = decoded.width * scale;
+    const dh = decoded.height * scale;
+    const dx = (size - dw) / 2;
+    const dy = (size - dh) / 2;
+
+    decoded.draw(ctx, 0, 0, decoded.width, decoded.height, dx, dy, dw, dh);
+
+    const webpBlob = await canvasToBlob(canvas, "image/webp", quality);
+    if (webpBlob && webpBlob.type === "image/webp") {
+      return blobToDataUrl(webpBlob);
+    }
+
+    const fallbackBlob = await canvasToBlob(canvas, "image/jpeg", quality);
+    if (fallbackBlob) {
+      return blobToDataUrl(fallbackBlob);
+    }
+
+    throw new Error("Failed to encode image");
   } finally {
     decoded.cleanup();
   }

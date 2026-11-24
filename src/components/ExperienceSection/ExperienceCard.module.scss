@@ -10,7 +10,10 @@
   background: $color-bg-sheet;
   transition:
     border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    background-color 0.15s ease;
   break-inside: avoid;
 
   &:hover {
@@ -106,10 +109,14 @@
 }
 
 .imageUrlBar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   margin-bottom: 0.5rem;
 
-  input {
-    width: 100%;
+  input[type="url"] {
+    flex: 1;
+    min-width: 0;
     padding: 0.4rem 0.65rem;
     border: 1px solid $color-accent-blue;
     border-radius: $radius-sm;
@@ -119,6 +126,33 @@
     &:focus {
       outline: none;
     }
+  }
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+.logoActionBtn {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid $color-border-default;
+  border-radius: $radius-sm;
+  background: $color-bg-sheet;
+  color: $color-text-secondary;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+
+  &:hover {
+    border-color: $color-text-muted;
+    color: $color-text-primary;
+    background: $color-bg-subtle;
   }
 }
 
@@ -237,6 +271,40 @@
   gap: 0.25rem;
   opacity: 0.65;
   transition: opacity 0.15s ease;
+}
+
+.cardDragging {
+  opacity: 0.45;
+  transform: scale(0.99);
+}
+
+.cardDropTarget {
+  border-color: $color-accent-blue;
+  background: $color-accent-blue-soft;
+}
+
+.dragHandle {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-sm;
+  color: $color-text-secondary;
+  cursor: grab;
+  user-select: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    background: $color-bg-hover;
+    color: $color-text-primary;
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
 }
 
 .iconBtn {

@@ -10,10 +10,17 @@ import styles from "./ExperienceSection.module.scss";
 interface ExperienceSectionProps {
   items: ExperienceItem[];
   onChange: (nextItems: ExperienceItem[]) => void;
+  canEdit?: boolean;
 }
 
-export function ExperienceSection({ items, onChange }: ExperienceSectionProps) {
+export function ExperienceSection({
+  items,
+  onChange,
+  canEdit = true,
+}: ExperienceSectionProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const handleCommitItem = (updated: ExperienceItem) => {
     const next = items.map((item) => (item.id === updated.id ? updated : item));
@@ -24,6 +31,17 @@ export function ExperienceSection({ items, onChange }: ExperienceSectionProps) {
     if (!pendingDeleteId) return;
     onChange(items.filter((item) => item.id !== pendingDeleteId));
     setPendingDeleteId(null);
+  };
+
+  const handleReorderItem = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || toIndex < 0 || toIndex >= items.length) {
+      return;
+    }
+    const next = [...items];
+    const [moved] = next.splice(fromIndex, 1);
+    if (!moved) return;
+    next.splice(toIndex, 0, moved);
+    onChange(next);
   };
 
   const handleAddItem = () => {
@@ -37,6 +55,7 @@ export function ExperienceSection({ items, onChange }: ExperienceSectionProps) {
       startDate: "Jan 2025",
       endDate: "Present",
       bullets: ["Describe your key impact and responsibilities."],
+      skills: [],
     };
     onChange([newItem, ...items]);
   };
@@ -64,10 +83,50 @@ export function ExperienceSection({ items, onChange }: ExperienceSectionProps) {
         <p className={styles.empty}>No experience entries yet.</p>
       ) : (
         <div className={styles.list}>
-          {items.map((item) => (
+          {items.map((item, idx) => (
             <ExperienceCard
               key={item.id}
               item={item}
+              isDraggable={canEdit && items.length > 1}
+              isDragging={draggedIndex === idx}
+              isDropTarget={
+                dragOverIndex === idx &&
+                draggedIndex !== null &&
+                draggedIndex !== idx
+              }
+              onDragStart={(e) => {
+                const target = e.target as HTMLElement | null;
+                if (
+                  target?.closest("input, textarea, select, [contenteditable]")
+                ) {
+                  e.preventDefault();
+                  return;
+                }
+                setDraggedIndex(idx);
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", item.id);
+              }}
+              onDragOver={(e) => {
+                if (!canEdit || draggedIndex === null) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                if (dragOverIndex !== idx) {
+                  setDragOverIndex(idx);
+                }
+              }}
+              onDrop={(e) => {
+                if (!canEdit) return;
+                e.preventDefault();
+                if (draggedIndex !== null) {
+                  handleReorderItem(draggedIndex, idx);
+                }
+                setDraggedIndex(null);
+                setDragOverIndex(null);
+              }}
+              onDragEnd={() => {
+                setDraggedIndex(null);
+                setDragOverIndex(null);
+              }}
               onCommit={handleCommitItem}
               onDelete={setPendingDeleteId}
             />

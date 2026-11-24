@@ -1,27 +1,54 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Building2, ImagePlus, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState, type DragEvent } from "react";
 import type { ExperienceItem } from "@/types/resume";
 import { DatePickerBadge } from "@/components/DatePickerBadge/DatePickerBadge";
 import { ExperienceBullets } from "./ExperienceBullets";
+import { ExperienceCardActions } from "./ExperienceCardActions";
+import { ExperienceLogoBar, ExperienceLogoBox } from "./ExperienceLogoPicker";
+import { ExperienceSkills } from "./ExperienceSkills";
 import styles from "./ExperienceCard.module.scss";
 
 interface ExperienceCardProps {
   item: ExperienceItem;
+  isDraggable?: boolean;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
+  onDragStart?: (e: DragEvent<HTMLElement>) => void;
+  onDragOver?: (e: DragEvent<HTMLElement>) => void;
+  onDrop?: (e: DragEvent<HTMLElement>) => void;
+  onDragEnd?: () => void;
   onCommit: (updated: ExperienceItem) => void;
   onDelete: (id: string) => void;
 }
 
 export function ExperienceCard({
   item,
+  isDraggable = false,
+  isDragging = false,
+  isDropTarget = false,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
   onCommit,
   onDelete,
 }: ExperienceCardProps) {
   const [draft, setDraft] = useState<ExperienceItem>(item);
   const [prevItem, setPrevItem] = useState<ExperienceItem>(item);
   const [showImageInput, setShowImageInput] = useState(false);
-  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const [isDragArmed, setIsDragArmed] = useState(false);
+
+  useEffect(() => {
+    if (!isDragArmed) return;
+    const reset = () => setIsDragArmed(false);
+    window.addEventListener("pointerup", reset);
+    window.addEventListener("pointercancel", reset);
+    return () => {
+      window.removeEventListener("pointerup", reset);
+      window.removeEventListener("pointercancel", reset);
+    };
+  }, [isDragArmed]);
 
   if (item !== prevItem) {
     setPrevItem(item);
@@ -40,68 +67,46 @@ export function ExperienceCard({
     [onCommit],
   );
 
-  const trimmedLogoSrc = draft.companyImageUrl.trim();
-  const showImage =
-    Boolean(trimmedLogoSrc) && failedImageUrl !== trimmedLogoSrc;
-
   return (
-    <article className={styles.card} data-experience-id={item.id}>
-      <div className={styles.logoColumn}>
-        <button
-          type="button"
-          className={styles.logoBox}
-          onClick={() => setShowImageInput((prev) => !prev)}
-          data-tooltip="Set company logo URL"
-          data-tooltip-position="top"
-          aria-label="Edit company logo URL"
-        >
-          {showImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={trimmedLogoSrc}
-              alt={`${draft.company} logo`}
-              className={styles.logoImg}
-              onError={() => setFailedImageUrl(trimmedLogoSrc)}
-            />
-          ) : (
-            <Building2 size={22} strokeWidth={1.5} />
-          )}
-          <span
-            className={`${styles.logoEditHint} no-print`}
-            aria-hidden="true"
-          >
-            <ImagePlus size={12} />
-          </span>
-        </button>
-      </div>
+    <article
+      className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${
+        isDropTarget ? styles.cardDropTarget : ""
+      }`}
+      data-experience-id={item.id}
+      draggable={isDraggable && isDragArmed}
+      onPointerDown={(e) => {
+        if (!isDraggable) return;
+        const target = e.target as HTMLElement | null;
+        setIsDragArmed(Boolean(target?.closest("[data-drag-handle]")));
+      }}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={() => {
+        setIsDragArmed(false);
+        onDragEnd?.();
+      }}
+    >
+      <ExperienceLogoBox
+        company={draft.company}
+        imageUrl={draft.companyImageUrl}
+        onToggleEditor={() => setShowImageInput((prev) => !prev)}
+      />
 
       <div className={styles.content}>
         {showImageInput && (
-          <div className={`${styles.imageUrlBar} no-print`}>
-            <input
-              type="url"
-              value={draft.companyImageUrl}
-              onChange={(e) => {
-                setFailedImageUrl(null);
-                setDraft((prev) => ({
-                  ...prev,
-                  companyImageUrl: e.target.value,
-                }));
-              }}
-              onBlur={() => {
-                commitItem(draft);
-                setShowImageInput(false);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.currentTarget.blur();
-                }
-              }}
-              placeholder="Paste company logo image URL..."
-              aria-label="Company logo image URL"
-              autoFocus
-            />
-          </div>
+          <ExperienceLogoBar
+            imageUrl={draft.companyImageUrl}
+            onChangeUrl={(nextUrl) =>
+              setDraft((prev) => ({ ...prev, companyImageUrl: nextUrl }))
+            }
+            onCommitUrl={(nextUrl) => {
+              const nextDraft = { ...draft, companyImageUrl: nextUrl };
+              setDraft(nextDraft);
+              commitItem(nextDraft);
+            }}
+            onClose={() => setShowImageInput(false)}
+          />
         )}
 
         <div className={styles.headerRow}>
@@ -213,21 +218,10 @@ export function ExperienceCard({
             </div>
           </div>
 
-          <div className={`${styles.actions} no-print`}>
-            <button
-              type="button"
-              className={styles.iconBtn}
-              onClick={(event) => {
-                event.currentTarget.focus();
-                onDelete(item.id);
-              }}
-              aria-label="Delete experience"
-              data-tooltip="Delete experience"
-              data-tooltip-position="left"
-            >
-              <Trash2 size={15} />
-            </button>
-          </div>
+          <ExperienceCardActions
+            isDraggable={isDraggable}
+            onDelete={() => onDelete(item.id)}
+          />
         </div>
 
         <ExperienceBullets
@@ -239,6 +233,16 @@ export function ExperienceCard({
             if (commitNow) commitItem(nextDraft);
           }}
           onBlurCommit={() => commitItem(draft)}
+        />
+
+        <ExperienceSkills
+          itemId={item.id}
+          skills={draft.skills ?? []}
+          onChangeSkills={(nextSkills) => {
+            const nextDraft = { ...draft, skills: nextSkills };
+            setDraft(nextDraft);
+            commitItem(nextDraft);
+          }}
         />
       </div>
     </article>
