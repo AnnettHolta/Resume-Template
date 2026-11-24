@@ -10,7 +10,10 @@
   background: $color-bg-sheet;
   transition:
     border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    background-color 0.15s ease;
   break-inside: avoid;
 
   &:hover {
@@ -237,6 +240,40 @@
   gap: 0.25rem;
   opacity: 0.65;
   transition: opacity 0.15s ease;
+}
+
+.cardDragging {
+  opacity: 0.45;
+  transform: scale(0.99);
+}
+
+.cardDropTarget {
+  border-color: $color-accent-blue;
+  background: $color-accent-blue-soft;
+}
+
+.dragHandle {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: $radius-sm;
+  color: $color-text-secondary;
+  cursor: grab;
+  user-select: none;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    background: $color-bg-hover;
+    color: $color-text-primary;
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
 }
 
 .iconBtn {

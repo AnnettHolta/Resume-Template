@@ -152,6 +152,7 @@ function ResumeEditorContent({ initialData }: ResumeEditorProps) {
             <ExperienceSection
               items={currentResume.experience}
               onChange={(experience) => commitSection({ experience })}
+              canEdit={isWriter}
             />
             <EducationSection
               items={currentResume.education}

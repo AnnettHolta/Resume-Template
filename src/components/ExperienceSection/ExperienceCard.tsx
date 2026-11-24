@@ -1,20 +1,35 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { Building2, ImagePlus, Trash2 } from "lucide-react";
+import { useCallback, useState, type DragEvent } from "react";
+import { Building2, ImagePlus } from "lucide-react";
 import type { ExperienceItem } from "@/types/resume";
 import { DatePickerBadge } from "@/components/DatePickerBadge/DatePickerBadge";
 import { ExperienceBullets } from "./ExperienceBullets";
+import { ExperienceCardActions } from "./ExperienceCardActions";
 import styles from "./ExperienceCard.module.scss";
 
 interface ExperienceCardProps {
   item: ExperienceItem;
+  isDraggable?: boolean;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
+  onDragStart?: (e: DragEvent<HTMLElement>) => void;
+  onDragOver?: (e: DragEvent<HTMLElement>) => void;
+  onDrop?: (e: DragEvent<HTMLElement>) => void;
+  onDragEnd?: () => void;
   onCommit: (updated: ExperienceItem) => void;
   onDelete: (id: string) => void;
 }
 
 export function ExperienceCard({
   item,
+  isDraggable = false,
+  isDragging = false,
+  isDropTarget = false,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
   onCommit,
   onDelete,
 }: ExperienceCardProps) {
@@ -45,7 +60,17 @@ export function ExperienceCard({
     Boolean(trimmedLogoSrc) && failedImageUrl !== trimmedLogoSrc;
 
   return (
-    <article className={styles.card} data-experience-id={item.id}>
+    <article
+      className={`${styles.card} ${isDragging ? styles.cardDragging : ""} ${
+        isDropTarget ? styles.cardDropTarget : ""
+      }`}
+      data-experience-id={item.id}
+      draggable={isDraggable}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+    >
       <div className={styles.logoColumn}>
         <button
           type="button"
@@ -213,21 +238,10 @@ export function ExperienceCard({
             </div>
           </div>
 
-          <div className={`${styles.actions} no-print`}>
-            <button
-              type="button"
-              className={styles.iconBtn}
-              onClick={(event) => {
-                event.currentTarget.focus();
-                onDelete(item.id);
-              }}
-              aria-label="Delete experience"
-              data-tooltip="Delete experience"
-              data-tooltip-position="left"
-            >
-              <Trash2 size={15} />
-            </button>
-          </div>
+          <ExperienceCardActions
+            isDraggable={isDraggable}
+            onDelete={() => onDelete(item.id)}
+          />
         </div>
 
         <ExperienceBullets
