@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ExperienceSkills } from "@/components/ExperienceSection/ExperienceSkills";
+import { ModalController } from "@/components/Modal/ModalController";
 import { SkillsSection } from "@/components/SkillsSection/SkillsSection";
 import { mergeExperienceAndCustomSkills } from "@/lib/skillUtils";
 
@@ -34,6 +35,7 @@ describe("ExperienceSkills", () => {
         skills={["React", "react"]}
         onChangeSkills={onChangeSkills}
       />,
+      { wrapper: ModalController },
     );
 
     expect(screen.getAllByRole("listitem")).toHaveLength(1);
@@ -46,10 +48,17 @@ describe("ExperienceSkills", () => {
     fireEvent.change(input, { target: { value: "Node.js" } });
     fireEvent.click(screen.getByRole("button", { name: /add/i }));
     expect(onChangeSkills).toHaveBeenCalledWith(["React", "Node.js"]);
+    onChangeSkills.mockClear();
 
     fireEvent.click(
       screen.getByRole("button", { name: "Remove React from role" }),
     );
+    expect(onChangeSkills).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("dialog", { name: "Remove Skill?" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
     expect(onChangeSkills).toHaveBeenCalledWith([]);
   });
 
